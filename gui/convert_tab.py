@@ -39,8 +39,8 @@ class ConvertTab(QWidget):
         warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         warning_label.setStyleSheet("""
             color: #505050;
-            background: #e8e8e8;
-            border: 1px solid #d0d0d0;
+            background: #fffbe7; /* Cream color for highlight */
+            border: 1px solid #ffe0b2;
             border-radius: 6px;
             padding: 8px 0 8px 0;
             font-size: 14px;
@@ -104,7 +104,7 @@ class ConvertTab(QWidget):
         # Styles for tab, buttons, progress bar, general labels are kept from previous version
         self.setStyleSheet("""
             ConvertTab { /* Target the widget itself for background */
-                background-color: #fafafa;
+                 background-color: #f3f4f6; /* Soft gray */
             }
             QPushButton {
                 background-color: #808080;
