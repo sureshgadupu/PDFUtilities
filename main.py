@@ -1,19 +1,23 @@
 import sys
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QTabWidget, QMessageBox)
-from gui.convert_tab import ConvertTab
-from gui.compress_tab import CompressTab
-from gui.merge_tab import MergeTab
-from gui.split_tab import SplitTab
-from gui.extract_text_tab import ExtractTextTab
+import os
+from pathlib import Path
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QTabWidget, QMessageBox, QWidget, 
+    QVBoxLayout, QHBoxLayout, QMenuBar, QMenu, QToolBar, QPushButton, 
+    QLabel, QFileDialog, QSizePolicy, QToolButton, QFrame, QWidgetAction
+)
+from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QFont
+from PyQt6.QtCore import Qt, QSize
+from gui.tabs import ConvertTab, CompressTab, MergeTab, SplitTab, ExtractTab
 from compressor import is_ghostscript_available
 from setup_ghostscript import setup_ghostscript
 
 class PDFConverterApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("PDF Toolkit - Modularized")
-        self.setMinimumSize(750, 550)
-
+        self.setWindowTitle("PDF Utility App")
+        self.resize(1000, 700)
+        
         # Check for Ghostscript and set up if needed
         if not is_ghostscript_available():
             reply = QMessageBox.question(
@@ -36,23 +40,224 @@ class PDFConverterApp(QMainWindow):
                         "Failed to set up Ghostscript. PDF compression features may not work."
                     )
 
+        self._setup_menu()
+        self._setup_toolbar()
+        self._setup_central()
+
+    def _setup_menu(self):
+        menubar = QMenuBar(self)
+        file_menu = QMenu("File", self)
+        edit_menu = QMenu("Edit", self)
+        help_menu = QMenu("Help", self)
+        menubar.addMenu(file_menu)
+        menubar.addMenu(edit_menu)
+        menubar.addMenu(help_menu)
+        self.setMenuBar(menubar)
+
+    def _setup_toolbar(self):
+        toolbar = QToolBar()
+        toolbar.setMovable(False)
+        toolbar.setIconSize(QSize(24, 24))
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
+
+        def add_toolbar_button(icon_path, text, callback):
+            btn = QToolButton()
+            btn.setIcon(QIcon(icon_path))
+            btn.setText(text)
+            btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            btn.clicked.connect(callback)
+            btn.setStyleSheet("color: #000; font-size: 14px; padding: 2px 8px;")
+            action = QWidgetAction(toolbar)
+            action.setDefaultWidget(btn)
+            toolbar.addAction(action)
+            return btn
+
+        def add_separator():
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.VLine)
+            line.setFrameShadow(QFrame.Shadow.Sunken)
+            line.setStyleSheet("background: #a2d4ec; min-width: 2px; max-width: 2px;")
+            sep_action = QWidgetAction(toolbar)
+            sep_action.setDefaultWidget(line)
+            toolbar.addAction(sep_action)
+
+        self.add_file_btn = add_toolbar_button('gui/icons/file-plus.svg', 'Add File', self._add_file)
+        add_separator()
+        self.add_folder_btn = add_toolbar_button('gui/icons/folder-plus.svg', 'Add Folder', self._add_folder)
+        add_separator()
+        self.delete_btn = add_toolbar_button('gui/icons/trash-2.svg', 'Delete', self._delete_selected)
+        add_separator()
+        self.clear_btn = add_toolbar_button('gui/icons/x-circle.svg', 'Clear All', self._clear_all)
+        add_separator()
+
+    def _setup_central(self):
+        central = QWidget()
+        main_layout = QVBoxLayout(central)
+
         # Create tab widget
-        self.tabs = QTabWidget()
-        self.setCentralWidget(self.tabs)
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
+        self.tab_widget.setDocumentMode(True)
+        self.tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #b2e0f7;
+                background: #ffffff;
+            }
+            QTabBar::tab {
+                background: #d6f0fa;
+                color: #000;
+                padding: 8px 16px;
+                border: 1px solid #b2e0f7;
+                border-bottom: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            QTabBar::tab:selected {
+                background: #ffffff;
+                border-bottom: 1px solid #ffffff;
+            }
+            QTabBar::tab:hover {
+                background: #b7d6fb;
+            }
+        """)
 
-        # Convert to DOCX tab
-        self.convert_tab_instance = ConvertTab(self)
-        self.tabs.addTab(self.convert_tab_instance, "Convert to DOCX")
+        # Create tabs
+        self.convert_tab = ConvertTab()
+        self.compress_tab = CompressTab()
+        self.merge_tab = MergeTab()
+        self.split_tab = SplitTab()
+        self.extract_tab = ExtractTab()
 
-        # Add other tabs
-        self.tabs.addTab(CompressTab(), "Compress PDF")
-        self.tabs.addTab(MergeTab(), "Merge PDFs")
-        self.tabs.addTab(SplitTab(), "Split PDF")
-        self.tabs.addTab(ExtractTextTab(), "Extract Text")
+        # Add tabs to widget
+        self.tab_widget.addTab(self.convert_tab, QIcon('gui/icons/file-text.svg'), "Convert to DOCX")
+        self.tab_widget.addTab(self.compress_tab, QIcon('gui/icons/archive.svg'), "Compress PDF")
+        self.tab_widget.addTab(self.merge_tab, QIcon('gui/icons/layers.svg'), "Merge PDFs")
+        self.tab_widget.addTab(self.split_tab, QIcon('gui/icons/scissors.svg'), "Split PDF")
+        self.tab_widget.addTab(self.extract_tab, QIcon('gui/icons/file-text.svg'), "Extract Text")
+
+        # Connect tab change signal
+        self.tab_widget.currentChanged.connect(self._update_start_button_text)
+        
+        # Set initial button text for the default selected tab (Convert to DOCX)
+        self._update_start_button_text(0)
+
+        # Connect start button click for each tab
+        self.convert_tab.start_btn.clicked.connect(self._start_convert)
+        self.compress_tab.start_btn.clicked.connect(self._start_compress)
+        self.merge_tab.start_btn.clicked.connect(self._start_merge)
+        self.split_tab.start_btn.clicked.connect(self._start_split)
+        self.extract_tab.start_btn.clicked.connect(self._start_extract)
+
+        main_layout.addWidget(self.tab_widget)
+        self.setCentralWidget(central)
+
+        # Apply main window and central widget background
+        self.setStyleSheet("""
+            QMainWindow {
+                background: #d6f0fa;
+            }
+            QWidget {
+                background: #d6f0fa;
+            }
+        """)
+
+        # Style menu bar and menu items
+        self.menuBar().setStyleSheet("""
+            QMenuBar {
+                background: #b2e0f7;
+                color: #000;
+                font-size: 15px;
+            }
+            QMenuBar::item {
+                background: transparent;
+                color: #000;
+            }
+            QMenuBar::item:selected {
+                background: #a2d4ec;
+                color: #000;
+            }
+            QMenu {
+                background: #b2e0f7;
+                color: #000;
+                font-size: 15px;
+            }
+            QMenu::item:selected {
+                background: #a2d4ec;
+                color: #000;
+            }
+        """)
+
+    def _update_start_button_text(self, index):
+        """Update the start button text based on the selected tab"""
+        button_texts = {
+            0: "Convert",  # Convert to DOCX
+            1: "Compress", # Compress PDF
+            2: "Merge",    # Merge PDFs
+            3: "Split",    # Split PDF
+            4: "Extract"   # Extract Text
+        }
+        current_tab = self.tab_widget.widget(index)
+        if current_tab:
+            current_tab.start_btn.setText(button_texts.get(index, "Start"))
+
+    def _add_file(self):
+        files, _ = QFileDialog.getOpenFileNames(self, "Select PDF Files", os.path.expanduser("~"), "PDF Files (*.pdf)")
+        if files:
+            current_tab = self.tab_widget.currentWidget()
+            current_tab.add_files_to_table(files)
+
+    def _add_folder(self):
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder", os.path.expanduser("~"))
+        if folder:
+            current_tab = self.tab_widget.currentWidget()
+            pdf_files = []
+            for entry in os.listdir(folder):
+                if entry.lower().endswith('.pdf'):
+                    file_path = os.path.join(folder, entry)
+                    pdf_files.append(file_path)
+            if pdf_files:
+                current_tab.add_files_to_table(pdf_files)
+
+    def _delete_selected(self):
+        current_tab = self.tab_widget.currentWidget()
+        current_tab.remove_selected_files()
+
+    def _clear_all(self):
+        current_tab = self.tab_widget.currentWidget()
+        current_tab.clear_all_files()
+
+    def _start_convert(self):
+        """Handle convert button click"""
+        self.convert_tab._start_conversion_process()
+
+    def _start_compress(self):
+        """Handle compress button click"""
+        self.compress_tab._start_compression()
+
+    def _start_merge(self):
+        """Handle merge button click"""
+        self.merge_tab._start_merge()
+
+    def _start_split(self):
+        """Handle split button click"""
+        self.split_tab._start_split()
+
+    def _start_extract(self):
+        """Handle extract button click"""
+        self.extract_tab._start_extract()
 
     def closeEvent(self, event):
-        if hasattr(self.convert_tab_instance, 'stop_active_conversion'):
-            self.convert_tab_instance.stop_active_conversion()
+        # Stop any active workers
+        if hasattr(self.convert_tab, 'stop_active_conversion'):
+            self.convert_tab.stop_active_conversion()
+        if hasattr(self.compress_tab, 'worker') and self.compress_tab.worker and self.compress_tab.worker.isRunning():
+            self.compress_tab.worker.stop()
+        if hasattr(self.merge_tab, 'worker') and self.merge_tab.worker and self.merge_tab.worker.isRunning():
+            self.merge_tab.worker.stop()
+        if hasattr(self.split_tab, 'worker') and self.split_tab.worker and self.split_tab.worker.isRunning():
+            self.split_tab.worker.stop()
+        if hasattr(self.extract_tab, 'worker') and self.extract_tab.worker and self.extract_tab.worker.isRunning():
+            self.extract_tab.worker.stop()
         super().closeEvent(event)
 
 if __name__ == '__main__':
