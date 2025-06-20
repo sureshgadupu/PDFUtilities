@@ -1,8 +1,14 @@
 import os
+import sys
+import fitz  # PyMuPDF
 from PyQt6.QtCore import QThread, pyqtSignal
 from converter import convert_multiple_pdfs_to_docx # Ensure converter.py is in the same directory or accessible via PYTHONPATH
 from compressor import compress_multiple_pdfs # New import for compression
-import fitz  # PyMuPDF
+from pdf2docx import Converter
+import tempfile
+import shutil
+from PIL import Image
+import io
 
 class ConversionWorker(QThread):
     progress = pyqtSignal(int) # Percentage progress (0-100)
@@ -319,12 +325,13 @@ class ExtractWorker(QThread):
     finished = pyqtSignal(bool)
     error = pyqtSignal(str)
 
-    def __init__(self, pdf_files, output_directory, extract_mode, page_range, parent=None):
+    def __init__(self, pdf_files, output_directory, extract_mode, page_range, page_ranges=None, parent=None):
         super().__init__(parent)
         self.pdf_files = pdf_files
         self.output_directory = output_directory
         self.extract_mode = extract_mode
         self.page_range = page_range
+        self.page_ranges = page_ranges
         self._is_running = True
 
     def run(self):
@@ -345,11 +352,20 @@ class ExtractWorker(QThread):
                     if self.page_range == "All Pages":
                         start_page = 0
                         end_page = total_pages - 1
-                    else:
-                        # For custom range, use first and last page for now
-                        # TODO: Add UI for custom page range input
-                        start_page = 0
-                        end_page = total_pages - 1
+                        pages_to_process = range(start_page, end_page + 1)
+                    else:  # Custom Range
+                        if not self.page_ranges:
+                            self.error.emit("No page ranges specified")
+                            continue
+                            
+                        # Validate all page numbers first
+                        invalid_pages = [p for p in self.page_ranges if p > total_pages]
+                        if invalid_pages:
+                            self.error.emit(f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages.")
+                            continue
+                            
+                        # Convert to 0-based index
+                        pages_to_process = [p - 1 for p in self.page_ranges]
 
                     # Create output directory for this file
                     file_base = os.path.splitext(os.path.basename(pdf_file))[0]
@@ -360,7 +376,7 @@ class ExtractWorker(QThread):
                         # Extract text
                         text_file = os.path.join(file_output_dir, "extracted_text.txt")
                         with open(text_file, "w", encoding="utf-8") as f:
-                            for page_num in range(start_page, end_page + 1):
+                            for page_num in pages_to_process:
                                 if not self._is_running:
                                     break
                                 page = doc[page_num]
@@ -371,7 +387,7 @@ class ExtractWorker(QThread):
 
                     if self.extract_mode in ["Text with Images", "Images Only"]:
                         # Extract images
-                        for page_num in range(start_page, end_page + 1):
+                        for page_num in pages_to_process:
                             if not self._is_running:
                                 break
                             page = doc[page_num]
@@ -408,6 +424,323 @@ class ExtractWorker(QThread):
                 self.finished.emit(False)
         finally:
             self._is_running = False
+
+    def stop(self):
+        self._is_running = False
+
+class ConvertToImageWorker(QThread):
+    progress = pyqtSignal(int)
+    status_update = pyqtSignal(str)
+    finished = pyqtSignal(bool)
+    error = pyqtSignal(str)
+
+    def __init__(self, pdf_files, output_directory, image_format, dpi, result_type, color_type, parent=None):
+        super().__init__(parent)
+        self.pdf_files = pdf_files
+        self.output_directory = output_directory
+        self.image_format = image_format
+        self.dpi = dpi
+        self.result_type = result_type
+        self.color_type = color_type
+        self._is_running = True
+
+    def run(self):
+        try:
+            self._is_running = True
+            total_files = len(self.pdf_files)
+            success = True
+            
+            for i, pdf_file in enumerate(self.pdf_files):
+                if not self._is_running:
+                    break
+
+                try:
+                    self.status_update.emit(f"Processing {os.path.basename(pdf_file)}...")
+                    doc = fitz.open(pdf_file)
+                    total_pages = len(doc)
+
+                    # Create output directory for this file
+                    file_base = os.path.splitext(os.path.basename(pdf_file))[0]
+                    file_output_dir = os.path.join(self.output_directory, file_base)
+                    os.makedirs(file_output_dir, exist_ok=True)
+                    
+                    # Log the output directory
+                    self.status_update.emit(f"Output directory: {file_output_dir}")
+
+                    # Determine colorspace based on color type
+                    colorspace = "gray" if self.color_type == "Gray Scale" else "rgb"
+
+                    if self.result_type == "Multiple Images":
+                        # Convert each page to separate image
+                        for page_num in range(total_pages):
+                            if not self._is_running:
+                                break
+
+                            try:
+                                page = doc[page_num]
+                                # Calculate zoom factor based on DPI
+                                zoom = self.dpi / 72  # 72 is the default DPI
+                                matrix = fitz.Matrix(zoom, zoom)
+                                
+                                # Get page pixmap with appropriate colorspace
+                                pix = page.get_pixmap(
+                                    matrix=matrix,
+                                    alpha=False,  # No alpha channel for better compatibility
+                                    colorspace=colorspace
+                                )
+
+                                # Convert to PIL Image for better format handling
+                                if self.color_type == "Gray Scale":
+                                    img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
+                                else:
+                                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                                
+                                # Save image
+                                image_filename = f"page_{page_num + 1}.{self.image_format}"
+                                image_path = os.path.join(file_output_dir, image_filename)
+                                
+                                # Log the image path
+                                self.status_update.emit(f"Saving image to: {image_path}")
+                                
+                                if self.image_format == "jpeg":
+                                    img.save(image_path, "JPEG", quality=85, optimize=True)
+                                else:  # PNG
+                                    img.save(image_path, "PNG", optimize=True)
+
+                                # Verify file was created
+                                if os.path.exists(image_path):
+                                    self.status_update.emit(f"Successfully saved: {image_filename}")
+                                else:
+                                    self.error.emit(f"Failed to save image: {image_path}")
+                                    success = False
+
+                                self.status_update.emit(f"Converted page {page_num + 1} of {total_pages}")
+
+                            except Exception as e:
+                                self.error.emit(f"Error converting page {page_num + 1}: {str(e)}")
+                                success = False
+                                continue
+
+                    else:  # Single Big Image
+                        # Calculate total height for all pages
+                        total_height = 0
+                        page_widths = []
+                        
+                        for page_num in range(total_pages):
+                            page = doc[page_num]
+                            zoom = self.dpi / 72
+                            matrix = fitz.Matrix(zoom, zoom)
+                            rect = page.rect
+                            width = int(rect.width * zoom)
+                            height = int(rect.height * zoom)
+                            page_widths.append(width)
+                            total_height += height
+                        
+                        # Use the maximum width
+                        max_width = max(page_widths)
+                        
+                        # Create a large image to hold all pages
+                        if self.color_type == "Gray Scale":
+                            combined_img = Image.new("L", (max_width, total_height), 255)
+                        else:
+                            combined_img = Image.new("RGB", (max_width, total_height), (255, 255, 255))
+                        
+                        current_y = 0
+                        
+                        for page_num in range(total_pages):
+                            if not self._is_running:
+                                break
+
+                            try:
+                                page = doc[page_num]
+                                zoom = self.dpi / 72
+                                matrix = fitz.Matrix(zoom, zoom)
+                                
+                                pix = page.get_pixmap(
+                                    matrix=matrix,
+                                    alpha=False,
+                                    colorspace=colorspace
+                                )
+
+                                if self.color_type == "Gray Scale":
+                                    img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
+                                else:
+                                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                                
+                                # Paste the page image into the combined image
+                                combined_img.paste(img, (0, current_y))
+                                current_y += img.height
+                                
+                                self.status_update.emit(f"Processed page {page_num + 1} of {total_pages}")
+
+                            except Exception as e:
+                                self.error.emit(f"Error processing page {page_num + 1}: {str(e)}")
+                                success = False
+                                continue
+                        
+                        # Save the combined image
+                        image_filename = f"{file_base}_combined.{self.image_format}"
+                        image_path = os.path.join(file_output_dir, image_filename)
+                        
+                        self.status_update.emit(f"Saving combined image to: {image_path}")
+                        
+                        if self.image_format == "jpeg":
+                            combined_img.save(image_path, "JPEG", quality=85, optimize=True)
+                        else:  # PNG
+                            combined_img.save(image_path, "PNG", optimize=True)
+
+                        if os.path.exists(image_path):
+                            self.status_update.emit(f"Successfully saved combined image: {image_filename}")
+                        else:
+                            self.error.emit(f"Failed to save combined image: {image_path}")
+                            success = False
+
+                    doc.close()
+                    progress = int((i + 1) / total_files * 100)
+                    self.progress.emit(progress)
+
+                except Exception as e:
+                    self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
+                    success = False
+                    continue
+
+            if self._is_running:
+                self.finished.emit(success)
+
+        except Exception as e:
+            if self._is_running:
+                self.error.emit(f"Critical error in convert to image worker: {str(e)}")
+                self.finished.emit(False)
+        finally:
+            self._is_running = False
+
+    def stop(self):
+        self._is_running = False
+
+class ExtractTextWorker(QThread):
+    progress = pyqtSignal(int)
+    status_update = pyqtSignal(str)
+    finished = pyqtSignal(bool)
+    error = pyqtSignal(str)
+
+    def __init__(self, pdf_files, output_directory, mode, page_range, output_format, parent=None):
+        super().__init__(parent)
+        self.pdf_files = pdf_files
+        self.output_directory = output_directory
+        self.mode = mode
+        self.page_range = page_range
+        self.output_format = output_format
+        self._is_running = True
+
+    def run(self):
+        try:
+            self._is_running = True
+            total_files = len(self.pdf_files)
+            success = True
+            
+            for i, pdf_file in enumerate(self.pdf_files):
+                if not self._is_running:
+                    break
+
+                try:
+                    self.status_update.emit(f"Processing {os.path.basename(pdf_file)}...")
+                    doc = fitz.open(pdf_file)
+                    total_pages = len(doc)
+
+                    # Create output directory for this file
+                    file_base = os.path.splitext(os.path.basename(pdf_file))[0]
+                    file_output_dir = os.path.join(self.output_directory, file_base)
+                    os.makedirs(file_output_dir, exist_ok=True)
+                    
+                    # Log the output directory
+                    self.status_update.emit(f"Output directory: {file_output_dir}")
+
+                    # Determine which pages to process
+                    if self.mode == "All Pages":
+                        pages_to_process = range(total_pages)
+                    elif self.mode == "Selected Pages":
+                        pages_to_process = range(total_pages)  # TODO: Implement page selection
+                    else:  # Page Range
+                        try:
+                            pages_to_process = self._parse_page_range(self.page_range, total_pages)
+                        except ValueError as e:
+                            self.error.emit(f"Invalid page range: {str(e)}")
+                            success = False
+                            continue
+
+                    # Extract text from each page
+                    extracted_text = []
+                    for page_num in pages_to_process:
+                        if not self._is_running:
+                            break
+
+                        try:
+                            page = doc[page_num]
+                            text = page.get_text()
+                            extracted_text.append(text)
+                            self.status_update.emit(f"Extracted text from page {page_num + 1} of {total_pages}")
+
+                        except Exception as e:
+                            self.error.emit(f"Error extracting text from page {page_num + 1}: {str(e)}")
+                            success = False
+                            continue
+
+                    # Save extracted text
+                    if extracted_text:
+                        output_file = os.path.join(file_output_dir, f"{file_base}.{self.output_format}")
+                        try:
+                            if self.output_format == "txt":
+                                with open(output_file, "w", encoding="utf-8") as f:
+                                    f.write("\n\n".join(extracted_text))
+                            else:  # Word format
+                                from docx import Document
+                                doc = Document()
+                                for text in extracted_text:
+                                    doc.add_paragraph(text)
+                                doc.save(output_file)
+
+                            self.status_update.emit(f"Saved extracted text to: {output_file}")
+                        except Exception as e:
+                            self.error.emit(f"Error saving extracted text: {str(e)}")
+                            success = False
+
+                    doc.close()
+                    progress = int((i + 1) / total_files * 100)
+                    self.progress.emit(progress)
+
+                except Exception as e:
+                    self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
+                    success = False
+                    continue
+
+            if self._is_running:
+                self.finished.emit(success)
+
+        except Exception as e:
+            if self._is_running:
+                self.error.emit(f"Critical error in extract text worker: {str(e)}")
+                self.finished.emit(False)
+        finally:
+            self._is_running = False
+
+    def _parse_page_range(self, page_range, total_pages):
+        """Parse page range string (e.g., "1-3,5,7-9") into list of page numbers"""
+        if not page_range:
+            return range(total_pages)
+
+        pages = []
+        for part in page_range.split(','):
+            if '-' in part:
+                start, end = map(int, part.split('-'))
+                if start < 1 or end > total_pages or start > end:
+                    raise ValueError(f"Invalid page range: {part}")
+                pages.extend(range(start - 1, end))
+            else:
+                page = int(part)
+                if page < 1 or page > total_pages:
+                    raise ValueError(f"Invalid page number: {page}")
+                pages.append(page - 1)
+        return sorted(set(pages))
 
     def stop(self):
         self._is_running = False 

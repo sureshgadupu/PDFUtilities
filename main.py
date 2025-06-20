@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QFont
 from PyQt6.QtCore import Qt, QSize
-from gui.tabs import ConvertTab, CompressTab, MergeTab, SplitTab, ExtractTab
+from gui.tabs import ConvertTab, CompressTab, MergeTab, SplitTab, ExtractTab, ConvertToImageTab
 from compressor import is_ghostscript_available
 from setup_ghostscript import setup_ghostscript
 
@@ -49,6 +49,51 @@ class PDFConverterApp(QMainWindow):
         file_menu = QMenu("File", self)
         edit_menu = QMenu("Edit", self)
         help_menu = QMenu("Help", self)
+
+        # Add File menu items
+        add_file_action = QAction("Add File", self)
+        add_file_action.setShortcut("Ctrl+O")
+        add_file_action.triggered.connect(self._add_file)
+        file_menu.addAction(add_file_action)
+
+        file_menu.setStyleSheet("""
+            QMenu::item {
+                background: #b2e0f7;
+                color: #000000;                
+            }
+            QMenu::item:selected {
+                background: #a2d4ec;
+                color: #000000;
+            }
+        """)
+
+        add_folder_action = QAction("Add Folder", self)
+        add_folder_action.setShortcut("Ctrl+Shift+O")
+        add_folder_action.triggered.connect(self._add_folder)
+        file_menu.addAction(add_folder_action)
+
+        # Add Edit menu items
+        delete_action = QAction("Delete", self)
+        delete_action.setShortcut("Delete")
+        delete_action.triggered.connect(self._delete_selected)
+        edit_menu.addAction(delete_action)
+
+        clear_all_action = QAction("Clear All", self)
+        clear_all_action.setShortcut("Ctrl+Shift+D")
+        clear_all_action.triggered.connect(self._clear_all)
+        edit_menu.addAction(clear_all_action)
+
+        edit_menu.setStyleSheet("""
+            QMenu::item {
+                background: #b2e0f7;
+                color: #000000;               
+            }
+            QMenu::item:selected {
+                background: #a2d4ec;
+                color: #000000;
+            }
+        """)
+
         menubar.addMenu(file_menu)
         menubar.addMenu(edit_menu)
         menubar.addMenu(help_menu)
@@ -127,6 +172,7 @@ class PDFConverterApp(QMainWindow):
         self.merge_tab = MergeTab()
         self.split_tab = SplitTab()
         self.extract_tab = ExtractTab()
+        self.convert_to_image_tab = ConvertToImageTab()
 
         # Add tabs to widget
         self.tab_widget.addTab(self.convert_tab, QIcon('gui/icons/file-text.svg'), "Convert to DOCX")
@@ -134,6 +180,7 @@ class PDFConverterApp(QMainWindow):
         self.tab_widget.addTab(self.merge_tab, QIcon('gui/icons/layers.svg'), "Merge PDFs")
         self.tab_widget.addTab(self.split_tab, QIcon('gui/icons/scissors.svg'), "Split PDF")
         self.tab_widget.addTab(self.extract_tab, QIcon('gui/icons/file-text.svg'), "Extract Text")
+        self.tab_widget.addTab(self.convert_to_image_tab, "Convert to Image")
 
         # Connect tab change signal
         self.tab_widget.currentChanged.connect(self._update_start_button_text)
@@ -147,6 +194,7 @@ class PDFConverterApp(QMainWindow):
         self.merge_tab.start_btn.clicked.connect(self._start_merge)
         self.split_tab.start_btn.clicked.connect(self._start_split)
         self.extract_tab.start_btn.clicked.connect(self._start_extract)
+        self.convert_to_image_tab.start_btn.clicked.connect(self._start_convert_to_image)
 
         main_layout.addWidget(self.tab_widget)
         self.setCentralWidget(central)
@@ -194,7 +242,8 @@ class PDFConverterApp(QMainWindow):
             1: "Compress", # Compress PDF
             2: "Merge",    # Merge PDFs
             3: "Split",    # Split PDF
-            4: "Extract"   # Extract Text
+            4: "Extract",  # Extract Text
+            5: "Convert"   # Convert to Image
         }
         current_tab = self.tab_widget.widget(index)
         if current_tab:
@@ -245,6 +294,10 @@ class PDFConverterApp(QMainWindow):
     def _start_extract(self):
         """Handle extract button click"""
         self.extract_tab._start_extract()
+
+    def _start_convert_to_image(self):
+        """Handle convert to image button click"""
+        self.convert_to_image_tab._start_convert_to_image()
 
     def closeEvent(self, event):
         # Stop any active workers
