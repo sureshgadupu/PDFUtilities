@@ -24,6 +24,8 @@ class BaseTab(QWidget):
         self.file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.file_table.setShowGrid(True)
         self.file_table.setAlternatingRowColors(True)
+        # Disable sorting for all tables
+        self.file_table.setSortingEnabled(False)
         layout.addWidget(self.file_table)
 
         # Progress Bar
@@ -239,7 +241,6 @@ class BaseTab(QWidget):
             row = self.file_table.rowCount()
             
             # Disable sorting and updates temporarily
-            self.file_table.setSortingEnabled(False)
             self.file_table.setUpdatesEnabled(False)
             
             # Insert row and set items
@@ -252,7 +253,6 @@ class BaseTab(QWidget):
             self.file_table.setItem(row, 1, size_item)
             
             # Re-enable sorting and updates
-            self.file_table.setSortingEnabled(True)
             self.file_table.setUpdatesEnabled(True)
             
         except Exception as e:
@@ -262,7 +262,6 @@ class BaseTab(QWidget):
         """Add multiple files to the table efficiently"""
         try:
             # Disable sorting and updates temporarily
-            self.file_table.setSortingEnabled(False)
             self.file_table.setUpdatesEnabled(False)
             
             # Prepare all items first
@@ -288,13 +287,11 @@ class BaseTab(QWidget):
                 self.file_table.setItem(start_row + i, 1, size_item)
             
             # Re-enable sorting and updates
-            self.file_table.setSortingEnabled(True)
             self.file_table.setUpdatesEnabled(True)
             
         except Exception as e:
             print(f"Error adding files: {str(e)}")
             # Make sure to re-enable updates even if there's an error
-            self.file_table.setSortingEnabled(True)
             self.file_table.setUpdatesEnabled(True)
 
     def remove_selected_files(self):

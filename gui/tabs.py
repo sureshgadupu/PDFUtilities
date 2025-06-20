@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
-    QSpinBox, QCheckBox, QProgressBar, QPushButton, QMessageBox, QLineEdit
+    QSpinBox, QCheckBox, QProgressBar, QPushButton, QMessageBox, QLineEdit, QTableWidgetItem
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QEvent
+from PyQt6.QtGui import QKeySequence, QShortcut
 from .base_tab import BaseTab
 from workers import ConversionWorker, CompressionWorker, MergeWorker, SplitWorker, ExtractWorker, ConvertToImageWorker, ExtractTextWorker
 import os
@@ -237,6 +238,54 @@ class MergeTab(BaseTab):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.worker = None
+        self._install_shortcuts()
+        # Disable sorting permanently for merge tab since order matters
+        self.file_table.setSortingEnabled(False)
+
+    def _install_shortcuts(self):
+        shortcut_up = QShortcut(QKeySequence('Ctrl+Up'), self)
+        shortcut_down = QShortcut(QKeySequence('Ctrl+Down'), self)
+        shortcut_up.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        shortcut_down.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        shortcut_up.activated.connect(self._move_selected_up)
+        shortcut_down.activated.connect(self._move_selected_down)
+
+    def _move_selected_up(self):
+        selected = self.file_table.selectionModel().selectedRows()
+        if len(selected) != 1:
+            return
+        row = selected[0].row()
+        if row == 0:
+            return
+        self._swap_rows(row, row - 1)
+        self.file_table.clearSelection()
+        self.file_table.selectRow(row - 1)
+
+    def _move_selected_down(self):
+        selected = self.file_table.selectionModel().selectedRows()
+        if len(selected) != 1:
+            return
+        row = selected[0].row()
+        if row >= self.file_table.rowCount() - 1:
+            return
+        self._swap_rows(row, row + 1)
+        self.file_table.clearSelection()
+        self.file_table.selectRow(row + 1)
+
+    def _swap_rows(self, row1, row2):
+        self.file_table.blockSignals(True)
+
+        for col in range(self.file_table.columnCount()):
+            # Take items from both rows
+            item1 = self.file_table.takeItem(row1, col)
+            item2 = self.file_table.takeItem(row2, col)
+            
+            # Set items in swapped positions
+            self.file_table.setItem(row1, col, item2)
+            self.file_table.setItem(row2, col, item1)
+
+        self.file_table.blockSignals(False)
+        self.file_table.viewport().update()
 
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
