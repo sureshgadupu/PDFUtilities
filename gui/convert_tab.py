@@ -1,11 +1,13 @@
 import os
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton, 
-                             QProgressBar, QListWidgetItem, QFileDialog, QMessageBox)
-from PyQt6.QtCore import Qt, pyqtSignal, QStandardPaths
-from PyQt6.QtGui import QFont
 
-from .custom_widgets import ToggleListWidget # Assuming custom_widgets.py is in the same gui directory
-from workers import ConversionWorker # Assuming workers.py is in the parent directory
+from PyQt6.QtCore import QStandardPaths, Qt, pyqtSignal
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QFileDialog, QLabel, QListWidgetItem, QMessageBox, QProgressBar, QPushButton, QVBoxLayout, QWidget
+
+from workers import ConversionWorker  # Assuming workers.py is in the parent directory
+
+from .custom_widgets import ToggleListWidget  # Assuming custom_widgets.py is in the same gui directory
+
 
 class ConvertTab(QWidget):
     # Optional: Signals to notify the main window if needed, though most logic will be internal.
@@ -14,30 +16,33 @@ class ConvertTab(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.worker = None # To hold the conversion worker thread
+        self.worker = None  # To hold the conversion worker thread
         self._setup_ui()
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
 
         # Title
-        title_label = QLabel("PDF to DOCX Converter") # Corrected from title_label
-        title_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))
+        title_label = QLabel("PDF to DOCX Converter")  # Corrected from title_label
+        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # Styles for title, warning, etc. are kept from previous version
-        title_label.setStyleSheet("""
+        title_label.setStyleSheet(
+            """
             color: #000000;
             background-color: #f0f0f0;
             padding: 22px 0 16px 0;
             border-bottom: 1.5px solid #cccccc;
             border-radius: 8px 8px 0 0;
-        """)
+        """
+        )
         layout.addWidget(title_label)
 
         # Warning
         warning_label = QLabel("Note: Image and graphic elements in PDFs may be lost or altered during conversion.")
         warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        warning_label.setStyleSheet("""
+        warning_label.setStyleSheet(
+            """
             color: #505050;
             background: #fffbe7; /* Cream color for highlight */
             border: 1px solid #ffe0b2;
@@ -45,13 +50,15 @@ class ConvertTab(QWidget):
             padding: 8px 0 8px 0;
             font-size: 14px;
             margin-bottom: 10px;
-        """)
+        """
+        )
         layout.addWidget(warning_label)
 
         # File list using ToggleListWidget
-        self.file_list_widget = ToggleListWidget() # Renamed from file_list for clarity
+        self.file_list_widget = ToggleListWidget()  # Renamed from file_list for clarity
         self.file_list_widget.setSelectionMode(ToggleListWidget.SelectionMode.ExtendedSelection)
-        self.file_list_widget.setStyleSheet("""
+        self.file_list_widget.setStyleSheet(
+            """
             QListWidget {
                 background-color: #ffffff;
                 color: #222222;
@@ -67,7 +74,8 @@ class ConvertTab(QWidget):
                 background: #b7d6fb;
                 color: #222222;
             }
-        """)
+        """
+        )
         self.file_list_widget.itemSelectionChanged.connect(self._update_button_states)
         layout.addWidget(self.file_list_widget)
 
@@ -97,12 +105,13 @@ class ConvertTab(QWidget):
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.status_label)
 
-        self.setLayout(layout) # Set the layout for the QWidget
+        self.setLayout(layout)  # Set the layout for the QWidget
         self._apply_general_styles()
 
     def _apply_general_styles(self):
         # Styles for tab, buttons, progress bar, general labels are kept from previous version
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             ConvertTab { /* Target the widget itself for background */
                  background-color: #f3f4f6; /* Soft gray */
             }
@@ -144,20 +153,21 @@ class ConvertTab(QWidget):
             QLabel {
                 color: #000000; /* Default for labels not specifically styled */
             }
-        """)
+        """
+        )
 
     def _select_files(self):
         files, _ = QFileDialog.getOpenFileNames(
             self,
             "Select PDF Files",
             QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
-            "PDF Files (*.pdf)"
+            "PDF Files (*.pdf)",
         )
         if files:
             self.file_list_widget.clear()
             for f_path in files:
                 item = QListWidgetItem(f_path)
-                item.setToolTip(f_path) # Show full path on hover
+                item.setToolTip(f_path)  # Show full path on hover
                 self.file_list_widget.addItem(item)
             self.status_label.setText(f"{len(files)} file(s) selected. Ready to convert.")
             self.status_label.setStyleSheet("color: black;")
@@ -165,10 +175,11 @@ class ConvertTab(QWidget):
 
     def _remove_selected_files(self):
         selected_items = self.file_list_widget.selectedItems()
-        if not selected_items: return
+        if not selected_items:
+            return
         for item in selected_items:
             self.file_list_widget.takeItem(self.file_list_widget.row(item))
-        
+
         if self.file_list_widget.count() == 0:
             self.status_label.setText("No files selected.")
         else:
@@ -203,13 +214,13 @@ class ConvertTab(QWidget):
         # if self.conversion_process_started:
         #     self.conversion_process_started.emit()
 
-        self.worker = ConversionWorker(pdf_files, output_directory, self) # Pass self as parent
+        self.worker = ConversionWorker(pdf_files, output_directory, self)  # Pass self as parent
         self.worker.progress.connect(self._update_progress_bar)
         self.worker.status_update.connect(self._update_status_label)
         self.worker.finished.connect(self._handle_conversion_finished)
         self.worker.error.connect(self._handle_conversion_error)
         self.worker.start()
-        self._update_button_states() # Disable buttons while worker is running
+        self._update_button_states()  # Disable buttons while worker is running
 
     def _update_progress_bar(self, value):
         self.progress_bar.setValue(value)
@@ -218,7 +229,7 @@ class ConvertTab(QWidget):
         self.status_label.setText(message)
         if "Error" in message or "Failed" in message:
             self.status_label.setStyleSheet("color: red;")
-        elif "Successfully" in message or "Created output directory" in message : # also color green for directory creation
+        elif "Successfully" in message or "Created output directory" in message:  # also color green for directory creation
             self.status_label.setStyleSheet("color: green;")
         else:
             self.status_label.setStyleSheet("color: black;")
@@ -232,26 +243,28 @@ class ConvertTab(QWidget):
             final_message = f"All {num_success} files converted successfully to: {self.worker.output_directory}"
             self.status_label.setStyleSheet("color: green;")
         elif num_success > 0 and num_failed > 0:
-            final_message = f"Partial success: {num_success} succeeded, {num_failed} failed. Check: {self.worker.output_directory}"
+            final_message = (
+                f"Partial success: {num_success} succeeded, {num_failed} failed. Check: {self.worker.output_directory}"
+            )
             self.status_label.setStyleSheet("color: orange;")
         elif num_failed > 0 and num_success == 0:
             final_message = f"All {num_failed} conversions failed."
             # If output directory creation failed, it might be in failed_messages[0]
             if "Failed to create output directory" in failed_messages[0]:
-                 final_message = failed_messages[0] # Show the more specific error from worker
+                final_message = failed_messages[0]  # Show the more specific error from worker
             self.status_label.setStyleSheet("color: red;")
-        elif num_success == 0 and num_failed == 0 and self.worker and self.worker.pdf_files: 
+        elif num_success == 0 and num_failed == 0 and self.worker and self.worker.pdf_files:
             final_message = "Conversion process completed, but no files were processed or an issue occurred."
             self.status_label.setStyleSheet("color: orange;")
-        else: # No files were selected initially, or worker didn't run
+        else:  # No files were selected initially, or worker didn't run
             final_message = "Conversion process finished or was not started."
             self.status_label.setStyleSheet("color: black;")
-            
+
         self.status_label.setText(final_message)
         QMessageBox.information(self, "Conversion Complete", final_message)
 
-        self.worker = None # Clear the worker
-        self._update_button_states() # Re-enable buttons
+        self.worker = None  # Clear the worker
+        self._update_button_states()  # Re-enable buttons
         # if self.conversion_process_finished:
         #     self.conversion_process_finished.emit()
 
@@ -260,15 +273,15 @@ class ConvertTab(QWidget):
         self.status_label.setStyleSheet("color: red;")
         self.progress_bar.setVisible(False)
         QMessageBox.critical(self, "Conversion Error", error_message)
-        self.worker = None # Clear the worker
-        self._update_button_states() # Re-enable buttons
+        self.worker = None  # Clear the worker
+        self._update_button_states()  # Re-enable buttons
 
     def stop_active_conversion(self):
         if self.worker and self.worker.isRunning():
-            self.worker.stop() # Tell the worker to stop
+            self.worker.stop()  # Tell the worker to stop
             # Optionally wait a bit for it to finish, or rely on signals
             self.status_label.setText("Conversion cancelled by user.")
             self.status_label.setStyleSheet("color: orange;")
-            self.progress_bar.setVisible(False) # Or set to 0
+            self.progress_bar.setVisible(False)  # Or set to 0
             self.worker = None
-            self._update_button_states() 
+            self._update_button_states()

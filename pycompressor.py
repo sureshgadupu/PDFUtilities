@@ -1,6 +1,8 @@
-import sys
 import os
+import sys
+
 import fitz  # PyMuPDF
+
 
 def compress_pdf(input_path, output_path, dpi=100):
     if not os.path.isfile(input_path):
@@ -37,6 +39,7 @@ def compress_pdf(input_path, output_path, dpi=100):
     except Exception as e:
         print(f"❌ Error during compression: {e}")
 
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: python compress_pdf.py input.pdf output.pdf")
@@ -46,6 +49,7 @@ def main():
     output_pdf = sys.argv[2]
 
     compress_pdf(input_pdf, output_pdf)
+
 
 if __name__ == "__main__":
     main()

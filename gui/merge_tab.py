@@ -1,11 +1,24 @@
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QListWidget, QListWidgetItem,
-    QHBoxLayout, QFileDialog, QMessageBox, QGroupBox, QMenu
-)
-from PyQt6.QtCore import Qt, QStandardPaths, QMimeData
-from PyQt6.QtGui import QFont, QAction, QDrag
-from workers import MergeWorker
 import os
+
+from PyQt6.QtCore import QMimeData, QStandardPaths, Qt
+from PyQt6.QtGui import QAction, QDrag, QFont
+from PyQt6.QtWidgets import (
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+from workers import MergeWorker
+
 
 class DragDropListWidget(QListWidget):
     def __init__(self, parent=None):
@@ -36,14 +49,15 @@ class DragDropListWidget(QListWidget):
         if event.mimeData().hasText():
             source = self.currentRow()
             target = self.row(self.itemAt(event.position().toPoint()))
-            
+
             if source < target:
                 target += 1
-            
+
             item = self.takeItem(source)
             self.insertItem(target, item)
             self.setCurrentItem(item)
             event.acceptProposedAction()
+
 
 class MergeTab(QWidget):
     def __init__(self, parent=None):
@@ -56,15 +70,17 @@ class MergeTab(QWidget):
 
         # Title
         title_label = QLabel("PDF Merge")
-        title_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))
+        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("""
+        title_label.setStyleSheet(
+            """
             color: #000000;
             background-color: #f0f0f0;
             padding: 22px 0 16px 0;
             border-bottom: 1.5px solid #cccccc;
             border-radius: 8px 8px 0 0;
-        """)
+        """
+        )
         layout.addWidget(title_label)
 
         # File list
@@ -72,7 +88,8 @@ class MergeTab(QWidget):
         self.file_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.file_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.file_list.customContextMenuRequested.connect(self._show_context_menu)
-        self.file_list.setStyleSheet("""
+        self.file_list.setStyleSheet(
+            """
             QListWidget {
                 background-color: #ffffff;
                 color: #222222;
@@ -88,7 +105,8 @@ class MergeTab(QWidget):
                 background: #b7d6fb;
                 color: #222222;
             }
-        """)
+        """
+        )
         layout.addWidget(self.file_list)
 
         # File selection buttons
@@ -127,7 +145,8 @@ class MergeTab(QWidget):
         self._apply_styles()
 
     def _apply_styles(self):
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             MergeTab {
                 background-color: #f3f4f6;
             }
@@ -169,7 +188,8 @@ class MergeTab(QWidget):
             QLabel {
                 color: #000000;
             }
-        """)
+        """
+        )
 
     def _update_merge_button_state(self):
         file_count = self.file_list.count()
@@ -206,7 +226,7 @@ class MergeTab(QWidget):
             self,
             "Select PDF Files",
             QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
-            "PDF Files (*.pdf)"
+            "PDF Files (*.pdf)",
         )
         if files:
             for f in files:
@@ -284,4 +304,4 @@ class MergeTab(QWidget):
         self.progress_bar.setVisible(False)
         self.worker = None
         self.merge_button.setEnabled(True)
-        self.select_button.setEnabled(True) 
+        self.select_button.setEnabled(True)

@@ -1,20 +1,25 @@
-import os
-import sys
-import fitz  # PyMuPDF
-from PyQt6.QtCore import QThread, pyqtSignal
-from converter import convert_multiple_pdfs_to_docx # Ensure converter.py is in the same directory or accessible via PYTHONPATH
-from compressor import compress_multiple_pdfs # New import for compression
-from pdf2docx import Converter
-import tempfile
-import shutil
-from PIL import Image
 import io
+import os
+import shutil
+import sys
+import tempfile
+
+import fitz  # PyMuPDF
+from pdf2docx import Converter
+from PIL import Image
+from PyQt6.QtCore import QThread, pyqtSignal
+
+from compressor import compress_multiple_pdfs  # New import for compression
+from converter import (  # Ensure converter.py is in the same directory or accessible via PYTHONPATH
+    convert_multiple_pdfs_to_docx,
+)
+
 
 class ConversionWorker(QThread):
-    progress = pyqtSignal(int) # Percentage progress (0-100)
-    status_update = pyqtSignal(str) # For individual file status messages
-    finished = pyqtSignal(list, list) # (successful_messages, failed_messages)
-    error = pyqtSignal(str) # For critical errors in the thread itself
+    progress = pyqtSignal(int)  # Percentage progress (0-100)
+    status_update = pyqtSignal(str)  # For individual file status messages
+    finished = pyqtSignal(list, list)  # (successful_messages, failed_messages)
+    error = pyqtSignal(str)  # For critical errors in the thread itself
 
     def __init__(self, pdf_files, output_directory, parent=None):
         super().__init__(parent)
@@ -25,9 +30,11 @@ class ConversionWorker(QThread):
     def run(self):
         try:
             self._is_running = True
+
             # Define callbacks for the converter module
             def progress_reporter(current_value, max_value):
-                if not self._is_running: return
+                if not self._is_running:
+                    return
                 if max_value > 0:
                     percentage = int((current_value / max_value) * 100)
                     self.progress.emit(percentage)
@@ -35,14 +42,15 @@ class ConversionWorker(QThread):
                     self.progress.emit(0)
 
             def status_reporter(message):
-                if not self._is_running: return
+                if not self._is_running:
+                    return
                 self.status_update.emit(message)
-            
-            if not self.pdf_files: # Check moved here to avoid issues if run with no files
+
+            if not self.pdf_files:  # Check moved here to avoid issues if run with no files
                 status_reporter("No files selected for conversion.")
-                self.finished.emit([],[])
+                self.finished.emit([], [])
                 return
-            
+
             if not os.path.exists(self.output_directory):
                 try:
                     os.makedirs(self.output_directory)
@@ -54,10 +62,7 @@ class ConversionWorker(QThread):
                     return
 
             successful_messages, failed_messages = convert_multiple_pdfs_to_docx(
-                self.pdf_files,
-                self.output_directory,
-                progress_callback=progress_reporter,
-                status_callback=status_reporter
+                self.pdf_files, self.output_directory, progress_callback=progress_reporter, status_callback=status_reporter
             )
             if self._is_running:
                 self.finished.emit(successful_messages, failed_messages)
@@ -70,6 +75,7 @@ class ConversionWorker(QThread):
 
     def stop(self):
         self._is_running = False
+
 
 class CompressionWorker(QThread):
     progress = pyqtSignal(int)
@@ -88,16 +94,21 @@ class CompressionWorker(QThread):
     def run(self):
         try:
             self._is_running = True
+
             def progress_reporter(current, total):
-                if not self._is_running: return
+                if not self._is_running:
+                    return
                 percent = int((current / total) * 100) if total > 0 else 0
                 self.progress.emit(percent)
+
             def status_reporter(msg):
-                if not self._is_running: return
+                if not self._is_running:
+                    return
                 self.status_update.emit(msg)
+
             if not self.pdf_files:
                 status_reporter("No files selected for compression.")
-                self.finished.emit([],[])
+                self.finished.emit([], [])
                 return
             if not os.path.exists(self.output_directory):
                 try:
@@ -114,7 +125,7 @@ class CompressionWorker(QThread):
                 compression_mode=self.compression_mode,
                 target_size_kb=self.target_size_kb,
                 progress_callback=progress_reporter,
-                status_callback=status_reporter
+                status_callback=status_reporter,
             )
             if self._is_running:
                 self.finished.emit(successes, failures)
@@ -126,6 +137,7 @@ class CompressionWorker(QThread):
 
     def stop(self):
         self._is_running = False
+
 
 class MergeWorker(QThread):
     progress = pyqtSignal(int)
@@ -153,21 +165,21 @@ class MergeWorker(QThread):
 
             # Create a new PDF document
             merged_pdf = fitz.open()
-            
+
             # Process each PDF file
             for i, pdf_file in enumerate(self.pdf_files):
                 try:
                     self.status_update.emit(f"Processing {os.path.basename(pdf_file)}...")
                     pdf_document = fitz.open(pdf_file)
-                    
+
                     # Insert all pages from the current PDF
                     merged_pdf.insert_pdf(pdf_document)
                     pdf_document.close()
-                    
+
                     # Update progress
                     progress = int((i + 1) / total_files * 100)
                     self.progress.emit(progress)
-                    
+
                 except Exception as e:
                     self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
                     return
@@ -183,6 +195,7 @@ class MergeWorker(QThread):
         except Exception as e:
             self.error.emit(f"Error during merge: {str(e)}")
             self.finished.emit(False)
+
 
 class SplitWorker(QThread):
     progress = pyqtSignal(int)
@@ -203,7 +216,7 @@ class SplitWorker(QThread):
             self._is_running = True
             total_files = len(self.pdf_files)
             success = True  # Track overall success
-            
+
             for i, pdf_file in enumerate(self.pdf_files):
                 if not self._is_running:
                     break
@@ -222,7 +235,7 @@ class SplitWorker(QThread):
                             new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
                             output_file = os.path.join(
                                 self.output_directory,
-                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_page_{page_num + 1}.pdf"
+                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_page_{page_num + 1}.pdf",
                             )
                             new_doc.save(output_file)
                             new_doc.close()
@@ -233,24 +246,25 @@ class SplitWorker(QThread):
                             self.error.emit("No page ranges specified")
                             success = False
                             continue
-                            
+
                         # Validate all page numbers first
                         invalid_pages = [p for p in self.page_ranges if p > total_pages]
                         if invalid_pages:
-                            self.error.emit(f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages.")
+                            self.error.emit(
+                                f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages."
+                            )
                             success = False
                             continue
-                            
+
                         # Create a new PDF for each range
                         for range_idx, page_num in enumerate(self.page_ranges):
                             if not self._is_running:
                                 break
-                                
+
                             new_doc = fitz.open()
-                            new_doc.insert_pdf(doc, from_page=page_num-1, to_page=page_num-1)  # Convert to 0-based index
+                            new_doc.insert_pdf(doc, from_page=page_num - 1, to_page=page_num - 1)  # Convert to 0-based index
                             output_file = os.path.join(
-                                self.output_directory,
-                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_page_{page_num}.pdf"
+                                self.output_directory, f"{os.path.splitext(os.path.basename(pdf_file))[0]}_page_{page_num}.pdf"
                             )
                             new_doc.save(output_file)
                             new_doc.close()
@@ -262,7 +276,7 @@ class SplitWorker(QThread):
                         current_size = 0
                         current_part = 1
                         new_doc = fitz.open()
-                        
+
                         for page_num in range(total_pages):
                             if not self._is_running:
                                 break
@@ -271,11 +285,11 @@ class SplitWorker(QThread):
                             temp_file = os.path.join(self.output_directory, "temp.pdf")
                             new_doc.save(temp_file)
                             current_size = os.path.getsize(temp_file)
-                            
+
                             if current_size >= target_size:
                                 output_file = os.path.join(
                                     self.output_directory,
-                                    f"{os.path.splitext(os.path.basename(pdf_file))[0]}_part{current_part}.pdf"
+                                    f"{os.path.splitext(os.path.basename(pdf_file))[0]}_part{current_part}.pdf",
                                 )
                                 new_doc.save(output_file)
                                 new_doc.close()
@@ -283,16 +297,16 @@ class SplitWorker(QThread):
                                 current_size = 0
                                 current_part += 1
                                 self.status_update.emit(f"Created part {current_part - 1}")
-                        
+
                         # Save remaining pages
                         if new_doc.page_count > 0:
                             output_file = os.path.join(
                                 self.output_directory,
-                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_part{current_part}.pdf"
+                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_part{current_part}.pdf",
                             )
                             new_doc.save(output_file)
                             new_doc.close()
-                        
+
                         # Clean up temp file
                         if os.path.exists(temp_file):
                             os.remove(temp_file)
@@ -319,6 +333,7 @@ class SplitWorker(QThread):
     def stop(self):
         self._is_running = False
 
+
 class ExtractWorker(QThread):
     progress = pyqtSignal(int)
     status_update = pyqtSignal(str)
@@ -338,7 +353,7 @@ class ExtractWorker(QThread):
         try:
             self._is_running = True
             total_files = len(self.pdf_files)
-            
+
             for i, pdf_file in enumerate(self.pdf_files):
                 if not self._is_running:
                     break
@@ -357,13 +372,15 @@ class ExtractWorker(QThread):
                         if not self.page_ranges:
                             self.error.emit("No page ranges specified")
                             continue
-                            
+
                         # Validate all page numbers first
                         invalid_pages = [p for p in self.page_ranges if p > total_pages]
                         if invalid_pages:
-                            self.error.emit(f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages.")
+                            self.error.emit(
+                                f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages."
+                            )
                             continue
-                            
+
                         # Convert to 0-based index
                         pages_to_process = [p - 1 for p in self.page_ranges]
 
@@ -392,14 +409,14 @@ class ExtractWorker(QThread):
                                 break
                             page = doc[page_num]
                             image_list = page.get_images()
-                            
+
                             for img_index, img in enumerate(image_list):
                                 if not self._is_running:
                                     break
                                 xref = img[0]
                                 base_image = doc.extract_image(xref)
                                 image_bytes = base_image["image"]
-                                
+
                                 # Save image
                                 image_filename = f"page_{page_num + 1}_image_{img_index + 1}.{base_image['ext']}"
                                 image_path = os.path.join(file_output_dir, image_filename)
@@ -428,6 +445,7 @@ class ExtractWorker(QThread):
     def stop(self):
         self._is_running = False
 
+
 class ConvertToImageWorker(QThread):
     progress = pyqtSignal(int)
     status_update = pyqtSignal(str)
@@ -449,7 +467,7 @@ class ConvertToImageWorker(QThread):
             self._is_running = True
             total_files = len(self.pdf_files)
             success = True
-            
+
             for i, pdf_file in enumerate(self.pdf_files):
                 if not self._is_running:
                     break
@@ -463,7 +481,7 @@ class ConvertToImageWorker(QThread):
                     file_base = os.path.splitext(os.path.basename(pdf_file))[0]
                     file_output_dir = os.path.join(self.output_directory, file_base)
                     os.makedirs(file_output_dir, exist_ok=True)
-                    
+
                     # Log the output directory
                     self.status_update.emit(f"Output directory: {file_output_dir}")
 
@@ -481,12 +499,12 @@ class ConvertToImageWorker(QThread):
                                 # Calculate zoom factor based on DPI
                                 zoom = self.dpi / 72  # 72 is the default DPI
                                 matrix = fitz.Matrix(zoom, zoom)
-                                
+
                                 # Get page pixmap with appropriate colorspace
                                 pix = page.get_pixmap(
                                     matrix=matrix,
                                     alpha=False,  # No alpha channel for better compatibility
-                                    colorspace=colorspace
+                                    colorspace=colorspace,
                                 )
 
                                 # Convert to PIL Image for better format handling
@@ -494,14 +512,14 @@ class ConvertToImageWorker(QThread):
                                     img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
                                 else:
                                     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                                
+
                                 # Save image
                                 image_filename = f"page_{page_num + 1}.{self.image_format}"
                                 image_path = os.path.join(file_output_dir, image_filename)
-                                
+
                                 # Log the image path
                                 self.status_update.emit(f"Saving image to: {image_path}")
-                                
+
                                 if self.image_format == "jpeg":
                                     img.save(image_path, "JPEG", quality=85, optimize=True)
                                 else:  # PNG
@@ -525,7 +543,7 @@ class ConvertToImageWorker(QThread):
                         # Calculate total height for all pages
                         total_height = 0
                         page_widths = []
-                        
+
                         for page_num in range(total_pages):
                             page = doc[page_num]
                             zoom = self.dpi / 72
@@ -535,18 +553,18 @@ class ConvertToImageWorker(QThread):
                             height = int(rect.height * zoom)
                             page_widths.append(width)
                             total_height += height
-                        
+
                         # Use the maximum width
                         max_width = max(page_widths)
-                        
+
                         # Create a large image to hold all pages
                         if self.color_type == "Gray Scale":
                             combined_img = Image.new("L", (max_width, total_height), 255)
                         else:
                             combined_img = Image.new("RGB", (max_width, total_height), (255, 255, 255))
-                        
+
                         current_y = 0
-                        
+
                         for page_num in range(total_pages):
                             if not self._is_running:
                                 break
@@ -555,35 +573,31 @@ class ConvertToImageWorker(QThread):
                                 page = doc[page_num]
                                 zoom = self.dpi / 72
                                 matrix = fitz.Matrix(zoom, zoom)
-                                
-                                pix = page.get_pixmap(
-                                    matrix=matrix,
-                                    alpha=False,
-                                    colorspace=colorspace
-                                )
+
+                                pix = page.get_pixmap(matrix=matrix, alpha=False, colorspace=colorspace)
 
                                 if self.color_type == "Gray Scale":
                                     img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
                                 else:
                                     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                                
+
                                 # Paste the page image into the combined image
                                 combined_img.paste(img, (0, current_y))
                                 current_y += img.height
-                                
+
                                 self.status_update.emit(f"Processed page {page_num + 1} of {total_pages}")
 
                             except Exception as e:
                                 self.error.emit(f"Error processing page {page_num + 1}: {str(e)}")
                                 success = False
                                 continue
-                        
+
                         # Save the combined image
                         image_filename = f"{file_base}_combined.{self.image_format}"
                         image_path = os.path.join(file_output_dir, image_filename)
-                        
+
                         self.status_update.emit(f"Saving combined image to: {image_path}")
-                        
+
                         if self.image_format == "jpeg":
                             combined_img.save(image_path, "JPEG", quality=85, optimize=True)
                         else:  # PNG
@@ -617,6 +631,7 @@ class ConvertToImageWorker(QThread):
     def stop(self):
         self._is_running = False
 
+
 class ExtractTextWorker(QThread):
     progress = pyqtSignal(int)
     status_update = pyqtSignal(str)
@@ -637,7 +652,7 @@ class ExtractTextWorker(QThread):
             self._is_running = True
             total_files = len(self.pdf_files)
             success = True
-            
+
             for i, pdf_file in enumerate(self.pdf_files):
                 if not self._is_running:
                     break
@@ -651,7 +666,7 @@ class ExtractTextWorker(QThread):
                     file_base = os.path.splitext(os.path.basename(pdf_file))[0]
                     file_output_dir = os.path.join(self.output_directory, file_base)
                     os.makedirs(file_output_dir, exist_ok=True)
-                    
+
                     # Log the output directory
                     self.status_update.emit(f"Output directory: {file_output_dir}")
 
@@ -694,6 +709,7 @@ class ExtractTextWorker(QThread):
                                     f.write("\n\n".join(extracted_text))
                             else:  # Word format
                                 from docx import Document
+
                                 doc = Document()
                                 for text in extracted_text:
                                     doc.add_paragraph(text)
@@ -729,9 +745,9 @@ class ExtractTextWorker(QThread):
             return range(total_pages)
 
         pages = []
-        for part in page_range.split(','):
-            if '-' in part:
-                start, end = map(int, part.split('-'))
+        for part in page_range.split(","):
+            if "-" in part:
+                start, end = map(int, part.split("-"))
                 if start < 1 or end > total_pages or start > end:
                     raise ValueError(f"Invalid page range: {part}")
                 pages.extend(range(start - 1, end))
@@ -743,4 +759,4 @@ class ExtractTextWorker(QThread):
         return sorted(set(pages))
 
     def stop(self):
-        self._is_running = False 
+        self._is_running = False

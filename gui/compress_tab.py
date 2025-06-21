@@ -1,12 +1,27 @@
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QListWidget, QListWidgetItem,
-    QHBoxLayout, QRadioButton, QButtonGroup, QLineEdit, QFileDialog, QMessageBox, QGroupBox,
-    QMenu
-)
-from PyQt6.QtCore import Qt, QStandardPaths
-from PyQt6.QtGui import QFont, QAction
-from workers import CompressionWorker
 import os
+
+from PyQt6.QtCore import QStandardPaths, Qt
+from PyQt6.QtGui import QAction, QFont
+from PyQt6.QtWidgets import (
+    QButtonGroup,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QRadioButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+from workers import CompressionWorker
+
 
 class CompressTab(QWidget):
     def __init__(self, parent=None):
@@ -19,15 +34,17 @@ class CompressTab(QWidget):
 
         # Title
         title_label = QLabel("PDF Compression")
-        title_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))
+        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("""
+        title_label.setStyleSheet(
+            """
             color: #000000;
             background-color: #f0f0f0;
             padding: 22px 0 16px 0;
             border-bottom: 1.5px solid #cccccc;
             border-radius: 8px 8px 0 0;
-        """)
+        """
+        )
         layout.addWidget(title_label)
 
         # File list
@@ -35,7 +52,8 @@ class CompressTab(QWidget):
         self.file_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.file_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.file_list.customContextMenuRequested.connect(self._show_context_menu)
-        self.file_list.setStyleSheet("""
+        self.file_list.setStyleSheet(
+            """
             QListWidget {
                 background-color: #ffffff;
                 color: #222222;
@@ -51,7 +69,8 @@ class CompressTab(QWidget):
                 background: #b7d6fb;
                 color: #222222;
             }
-        """)
+        """
+        )
         layout.addWidget(self.file_list)
 
         # File selection buttons
@@ -130,7 +149,8 @@ class CompressTab(QWidget):
         self._apply_styles()
 
     def _apply_styles(self):
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             CompressTab {
                 background-color: #f3f4f6;
             }
@@ -172,7 +192,8 @@ class CompressTab(QWidget):
             QLabel {
                 color: #000000;
             }
-        """)
+        """
+        )
 
     def _show_context_menu(self, position):
         if self.file_list.count() > 0:
@@ -205,7 +226,7 @@ class CompressTab(QWidget):
             self,
             "Select PDF Files",
             QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
-            "PDF Files (*.pdf)"
+            "PDF Files (*.pdf)",
         )
         if files:
             for f in files:
@@ -273,11 +294,7 @@ class CompressTab(QWidget):
         self.status_label.setText("Starting compression...")
         self.status_label.setStyleSheet("color: white;")
         self.worker = CompressionWorker(
-            pdf_files,
-            output_directory,
-            compression_mode=compression_mode,
-            target_size_kb=target_size_value,
-            parent=self
+            pdf_files, output_directory, compression_mode=compression_mode, target_size_kb=target_size_value, parent=self
         )
         self.worker.progress.connect(self._update_progress_bar)
         self.worker.status_update.connect(self._update_status_label)
@@ -327,4 +344,4 @@ class CompressTab(QWidget):
         QMessageBox.critical(self, "Compression Error", error_message)
         self.worker = None
         self.compress_button.setEnabled(True)
-        self.select_button.setEnabled(True) 
+        self.select_button.setEnabled(True)

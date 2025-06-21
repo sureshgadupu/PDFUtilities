@@ -1,10 +1,22 @@
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, 
-    QPushButton, QLabel, QRadioButton, QLineEdit, QFileDialog, QHeaderView, QProgressBar
-)
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon
 import os
+
+from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QProgressBar,
+    QPushButton,
+    QRadioButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class BaseTab(QWidget):
     def __init__(self, parent=None):
@@ -31,7 +43,8 @@ class BaseTab(QWidget):
         # Progress Bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
-        self.progress_bar.setStyleSheet("""
+        self.progress_bar.setStyleSheet(
+            """
             QProgressBar {
                 border: 1px solid #b2e0f7;
                 border-radius: 4px;
@@ -43,7 +56,8 @@ class BaseTab(QWidget):
                 background: #00bfff;
                 border-radius: 3px;
             }
-        """)
+        """
+        )
         layout.addWidget(self.progress_bar)
 
         # Status Label
@@ -55,7 +69,8 @@ class BaseTab(QWidget):
         start_layout = QHBoxLayout()
         start_layout.addStretch()
         self.start_btn = QPushButton("Start")
-        self.start_btn.setStyleSheet("""
+        self.start_btn.setStyleSheet(
+            """
             QPushButton {
                 background: #00bfff;
                 color: #000;
@@ -72,13 +87,16 @@ class BaseTab(QWidget):
             QPushButton:pressed {
                 background: #007fa3;
             }
-        """)
+        """
+        )
         start_layout.addWidget(self.start_btn)
         layout.addLayout(start_layout)
 
         # Output Folder Label
         output_folder_label = QLabel("Output Folder")
-        output_folder_label.setStyleSheet("font-weight: bold; font-size: 15px; margin-top: 12px; margin-bottom: 4px;color: #000;")
+        output_folder_label.setStyleSheet(
+            "font-weight: bold; font-size: 15px; margin-top: 12px; margin-bottom: 4px;color: #000;"
+        )
         layout.addWidget(output_folder_label)
 
         # Output Folder Selection
@@ -89,7 +107,8 @@ class BaseTab(QWidget):
 
         # Radio buttons for output folder
         self.same_folder_radio = QRadioButton("Same as input")
-        self.same_folder_radio.setStyleSheet("""
+        self.same_folder_radio.setStyleSheet(
+            """
             QRadioButton {
                 color: #000;
                 padding: 4px;
@@ -108,9 +127,11 @@ class BaseTab(QWidget):
             QRadioButton::indicator:unchecked {
                 background-color: white;
             }
-        """)
+        """
+        )
         self.custom_folder_radio = QRadioButton("Custom folder")
-        self.custom_folder_radio.setStyleSheet("""
+        self.custom_folder_radio.setStyleSheet(
+            """
             QRadioButton {
                 color: #000;
                 padding: 4px;
@@ -129,7 +150,8 @@ class BaseTab(QWidget):
             QRadioButton::indicator:unchecked {
                 background-color: white;
             }
-        """)
+        """
+        )
         self.same_folder_radio.setChecked(True)
         output_layout.addWidget(self.same_folder_radio)
         output_layout.addWidget(self.custom_folder_radio)
@@ -138,7 +160,8 @@ class BaseTab(QWidget):
         self.output_path.setEnabled(False)
         output_layout.addWidget(self.output_path)
         self.browse_btn = QPushButton("Browse")
-        self.browse_btn.setStyleSheet("""
+        self.browse_btn.setStyleSheet(
+            """
             QPushButton {
                 background: #00bfff;
                 color: #000;
@@ -155,7 +178,8 @@ class BaseTab(QWidget):
             QPushButton:pressed {
                 background: #007fa3;
             }
-        """)
+        """
+        )
         self.browse_btn.setEnabled(False)
         self.browse_btn.clicked.connect(self._browse_folder)
         output_layout.addWidget(self.browse_btn)
@@ -164,7 +188,8 @@ class BaseTab(QWidget):
 
     def _apply_common_styles(self):
         # Apply the same styles from main_window.py
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QWidget {
                 background: #d6f0fa;
             }
@@ -213,7 +238,8 @@ class BaseTab(QWidget):
                 border-radius: 6px;
                 padding: 4px 8px;
             }
-        """)
+        """
+        )
 
     def _toggle_custom_output(self, checked):
         self.output_path.setEnabled(checked)
@@ -239,22 +265,22 @@ class BaseTab(QWidget):
             file_name = os.path.basename(file_path)
             file_size = os.path.getsize(file_path)
             row = self.file_table.rowCount()
-            
+
             # Disable sorting and updates temporarily
             self.file_table.setUpdatesEnabled(False)
-            
+
             # Insert row and set items
             self.file_table.insertRow(row)
             name_item = QTableWidgetItem(file_name)
             name_item.setToolTip(file_path)
             size_item = QTableWidgetItem(self._format_size(file_size))
-            
+
             self.file_table.setItem(row, 0, name_item)
             self.file_table.setItem(row, 1, size_item)
-            
+
             # Re-enable sorting and updates
             self.file_table.setUpdatesEnabled(True)
-            
+
         except Exception as e:
             print(f"Error adding file {file_path}: {str(e)}")
 
@@ -263,7 +289,7 @@ class BaseTab(QWidget):
         try:
             # Disable sorting and updates temporarily
             self.file_table.setUpdatesEnabled(False)
-            
+
             # Prepare all items first
             items_to_add = []
             for file_path in file_paths:
@@ -276,19 +302,19 @@ class BaseTab(QWidget):
                     items_to_add.append((name_item, size_item))
                 except Exception as e:
                     print(f"Error processing file {file_path}: {str(e)}")
-            
+
             # Add all rows at once
             start_row = self.file_table.rowCount()
             self.file_table.setRowCount(start_row + len(items_to_add))
-            
+
             # Set all items
             for i, (name_item, size_item) in enumerate(items_to_add):
                 self.file_table.setItem(start_row + i, 0, name_item)
                 self.file_table.setItem(start_row + i, 1, size_item)
-            
+
             # Re-enable sorting and updates
             self.file_table.setUpdatesEnabled(True)
-            
+
         except Exception as e:
             print(f"Error adding files: {str(e)}")
             # Make sure to re-enable updates even if there's an error
@@ -322,4 +348,4 @@ class BaseTab(QWidget):
                 return os.path.dirname(files[0])
             return None
         else:
-            return self.output_path.text() if self.output_path.text() else None 
+            return self.output_path.text() if self.output_path.text() else None
