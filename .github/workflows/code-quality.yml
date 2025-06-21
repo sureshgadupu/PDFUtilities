@@ -24,13 +24,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 black isort
         
+    - name: Show Black version and configuration
+      run: |
+        black --version
+        black --help | head -20
+        
     - name: Check code formatting with Black
       run: |
-        black --check --diff .
+        black --check --diff --verbose .
         
     - name: Check import sorting with isort
       run: |
-        isort --check-only --diff .
+        isort --check-only --diff --verbose .
         
     - name: Lint with flake8
       run: |
