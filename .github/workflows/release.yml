@@ -1,0 +1,135 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build Windows executable
+      run: |
+        python build_app.py
+        
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: PDFUtilities-Windows
+        path: dist/PDFUtilities.exe
+        retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build Linux executable
+      run: |
+        python build_app.py
+        
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: PDFUtilities-Linux
+        path: dist/PDFUtilities
+        retention-days: 30
+
+  create-release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download Windows artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: PDFUtilities-Windows
+        path: ./windows-build
+        
+    - name: Download Linux artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: PDFUtilities-Linux
+        path: ./linux-build
+        
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+        
+    - name: Upload Windows executable
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./windows-build/PDFUtilities.exe
+        asset_name: PDFUtilities-Windows.exe
+        asset_content_type: application/octet-stream
+        
+    - name: Upload Linux executable
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./linux-build/PDFUtilities
+        asset_name: PDFUtilities-Linux
+        asset_content_type: application/octet-stream
+        
+    - name: Create source archive
+      run: |
+        git archive --format=zip --output=PDFUtilities-Source.zip HEAD
+        
+    - name: Upload source code
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./PDFUtilities-Source.zip
+        asset_name: PDFUtilities-Source.zip
+        asset_content_type: application/zip 

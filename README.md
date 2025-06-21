@@ -18,119 +18,180 @@ A modern, all-in-one application for professional PDF processing: **Convert, Com
 
 ## 🚀 Quick Start
 
+### Download
+
+- **Windows**: Download the latest release from [GitHub Releases](https://github.com/yourusername/PDFUtilities/releases)
+- **Linux**: Download the Linux executable from releases
+- **Source**: Clone the repository and follow development setup
+
+### Run
+
+```bash
+# Windows
+PDFUtilities.exe
+
+# Linux
+./PDFUtilities
+
+# From source
+python main.py
+```
+
+## 🛠️ Development Setup
+
 ### Prerequisites
 
-- Python 3.8 or higher
-- Git (for cloning)
+- Python 3.11+
+- Git
 
 ### Installation
 
-1. **Clone the repository:**
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/PDFUtilities.git
+cd PDFUtilities
 
-   ```bash
-   git clone https://github.com/sureshgadupu/PDFUtilities.git
-   cd PDFUtilities
-   ```
+# Create virtual environment
+python -m venv venv
 
-2. **Create and activate virtual environment:**
+# Activate virtual environment
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
 
-   ```bash
-   # Windows
-   python -m venv venv
-   .\venv\Scripts\activate
+# Install dependencies
+pip install -r requirements.txt
 
-   # Linux/Mac
-   python -m venv venv
-   source venv/bin/activate
-   ```
+# Run the application
+python main.py
+```
 
-3. **Install dependencies:**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run the application:**
-   ```bash
-   python main.py
-   ```
-
-## 📦 Build Standalone Executable
-
-To create a standalone executable (Windows):
+### Build Executable
 
 ```bash
-# Activate virtual environment
-.\venv\Scripts\activate
+# Install PyInstaller
+pip install pyinstaller
 
 # Build the application
 python build_app.py
 ```
 
-The executable will be created in the `dist` folder as `PDFUtilities.exe`.
-
-## 🛠️ Dependencies
-
-- **PyQt6**: Modern GUI framework
-- **pdf2docx**: PDF to DOCX conversion
-- **PyMuPDF**: PDF processing and manipulation
-- **Pillow**: Image processing
-- **Ghostscript**: Advanced PDF compression (bundled)
-
-## 📋 Requirements
-
-- Python 3.8+
-- See `requirements.txt` for complete dependency list
-
-## 🔧 Development
-
-### Project Structure
+## 📁 Project Structure
 
 ```
 PDFUtilities/
-├── main.py              # Main application entry point
-├── compressor.py        # PDF compression functionality
-├── converter.py         # PDF conversion utilities
-├── workers.py           # Background processing workers
-├── gui/                 # User interface components
-│   ├── tabs/           # Individual tab implementations
-│   ├── icons/          # Application icons
-│   └── ...
-├── bin/                # Bundled binaries (Ghostscript)
-└── build_app.py        # Build script for PyInstaller
+├── main.py                 # Main application entry point
+├── build_app.py           # Build script for PyInstaller
+├── pdf_utility.spec       # PyInstaller specification
+├── requirements.txt       # Python dependencies
+├── gui/                   # GUI components
+│   ├── tabs/             # Individual tab implementations
+│   ├── icons/            # Application icons
+│   └── custom_widgets.py # Custom UI components
+├── bin/                   # Binary dependencies
+│   └── Ghostscript/      # Ghostscript binaries
+└── .github/              # GitHub Actions workflows
+    └── workflows/        # CI/CD automation
 ```
 
-### Key Features Implementation
+## 🔄 CI/CD Pipeline
 
-- **Splash Screen**: Custom-drawn splash screen with progress updates
-- **Background Initialization**: Heavy operations run in background threads
-- **Ghostscript Integration**: Bundled Ghostscript for advanced compression
-- **Modern UI**: Tabbed interface with consistent styling
+This project uses GitHub Actions for automated builds and releases:
+
+### **Build Workflow** (`.github/workflows/build.yml`)
+
+- **Triggers**: Push to `main`/`develop` branches, Pull Requests
+- **Platforms**: Windows and Linux
+- **Actions**:
+  - ✅ Install dependencies
+  - ✅ Build executables with PyInstaller
+  - ✅ Run basic tests
+  - ✅ Upload build artifacts
+  - ✅ Create release assets for main branch
+
+### **Release Workflow** (`.github/workflows/release.yml`)
+
+- **Triggers**: Push tags (e.g., `v1.0.0`)
+- **Actions**:
+  - ✅ Build Windows executable
+  - ✅ Create GitHub release
+  - ✅ Upload executable and source code
+
+### **Code Quality** (`.github/workflows/code-quality.yml`)
+
+- **Triggers**: Push to `main`/`develop`, Pull Requests
+- **Actions**:
+  - ✅ Code formatting (Black)
+  - ✅ Import sorting (isort)
+  - ✅ Linting (flake8)
+  - ✅ Security checks (bandit, safety)
+
+### **How to Use**
+
+1. **Push to main**: Automatically builds and tests
+2. **Create PR**: Runs quality checks and builds
+3. **Create release**: Tag with `v1.0.0` format
+4. **Download**: Get executables from GitHub Actions artifacts or releases
+
+## 📋 Dependencies
+
+### Core Dependencies
+
+- **PyQt6**: Modern GUI framework
+- **PyMuPDF (fitz)**: PDF processing and manipulation
+- **pdf2docx**: PDF to DOCX conversion
+- **Pillow**: Image processing
+- **Ghostscript**: PDF compression (bundled)
+
+### Development Dependencies
+
+- **PyInstaller**: Executable creation
+- **Black**: Code formatting
+- **isort**: Import sorting
+- **flake8**: Linting
+- **bandit**: Security analysis
 
 ## 📄 License
 
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 
-### What this means:
+### **License Requirements:**
 
-- ✅ You can use, modify, and distribute this software
-- ✅ You can use it for commercial purposes
-- ⚠️ You must provide the complete source code when distributing
-- ⚠️ Any modifications must also be AGPL-licensed
-- ⚠️ Network use requires source code access
+✅ **Source Code**: Must provide complete source code  
+✅ **Network Use**: Source access required for network interactions  
+✅ **Derivative Works**: Modifications must also be AGPL-3.0  
+⚠️ **Ghostscript**: Included Ghostscript is AGPL-3.0 licensed
 
-**Note:** The AGPL-3.0 license is required due to the inclusion of Ghostscript (AGPL-licensed) for PDF compression features.
+### **Why AGPL-3.0?**
 
-For more details, see the [LICENSE](LICENSE) file.
+This license is required because the application includes Ghostscript binaries, which are licensed under AGPL-3.0. The copyleft provisions ensure that:
+
+- Users have access to the complete source code
+- Any modifications remain open source
+- Network use triggers source code distribution requirements
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### **Development Guidelines**
+
+- Follow PEP 8 style guidelines
+- Add tests for new features
+- Update documentation as needed
+- Ensure all CI checks pass
 
 ## 📞 Support
 
-If you encounter any issues or have questions, please open an issue on GitHub.
+- **Issues**: [GitHub Issues](https://github.com/yourusername/PDFUtilities/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/PDFUtilities/discussions)
+- **Releases**: [GitHub Releases](https://github.com/yourusername/PDFUtilities/releases)
 
 ---
 
-**Made with ❤️ for the PDF processing community**
+**Made with ❤️ using PyQt6 and modern Python practices**
