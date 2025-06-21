@@ -62,7 +62,7 @@ def verify_ghostscript_inclusion():
     """Verify that Ghostscript files are included in the built executable."""
     print("\nVerifying Ghostscript inclusion in built executable...")
     
-    dist_path = os.path.join('dist', 'PDFUtilityApp')
+    dist_path = os.path.join('dist', 'PDFUtilities')
     if not os.path.exists(dist_path):
         print(f"Warning: Dist folder not found at {dist_path}")
         return

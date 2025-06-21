@@ -5,7 +5,7 @@ import os
 from PyInstaller.utils.hooks import collect_data_files
 
 # Set the application name
-app_name = 'PDFUtilityApp'
+app_name = 'PDFUtilities'
 
 print(f"[SPEC DEBUG] Building for platform: {sys.platform}")
 
@@ -36,11 +36,10 @@ for icon_file in icon_files:
     else:
         print(f"[SPEC DEBUG]   - Missing icon: {icon_file}")
 
-# Collect binaries (executables)
+# Collect binaries (executables) - ALWAYS include Ghostscript for Windows
 binaries = []
 
-# Add Ghostscript binaries based on platform
-print("[SPEC DEBUG] Checking Ghostscript binaries:")
+# Add Ghostscript binaries for Windows
 if sys.platform == "win32":
     # Windows Ghostscript executables - include all versions
     gs_files = [
@@ -49,7 +48,7 @@ if sys.platform == "win32":
         ('bin/Ghostscript/Windows/gswin64.exe', 'bin/Ghostscript/Windows'),
         ('bin/Ghostscript/Windows/gswin64c.exe', 'bin/Ghostscript/Windows'),
     ]
-    # Only add files that exist
+    # Add all files that exist
     for gs_file, gs_dir in gs_files:
         if os.path.exists(gs_file):
             binaries += [(gs_file, gs_dir)]
