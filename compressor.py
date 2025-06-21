@@ -175,10 +175,19 @@ def get_bundled_ghostscript_path():
     """Get the path to the bundled Ghostscript executable."""
     if getattr(sys, 'frozen', False):
         # Running as compiled executable
-        base_path = os.path.dirname(sys.executable)
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        if hasattr(sys, '_MEIPASS'):
+            # One-file mode: files are extracted to a temporary directory
+            base_path = sys._MEIPASS
+            print(f"[DEBUG] Running as frozen executable (one-file), temp path: {base_path}")
+        else:
+            # One-directory mode: files are in the same directory as the executable
+            base_path = os.path.dirname(sys.executable)
+            print(f"[DEBUG] Running as frozen executable (one-dir), base path: {base_path}")
     else:
         # Running as script
         base_path = os.path.dirname(os.path.abspath(__file__))
+        print(f"[DEBUG] Running as script, base path: {base_path}")
     
     print(f"[DEBUG] Base path: {base_path}")
     
@@ -187,22 +196,47 @@ def get_bundled_ghostscript_path():
         # Windows version
         gs_dir = os.path.join(base_path, 'bin', 'Ghostscript', 'Windows')
         print(f"[DEBUG] Looking for Ghostscript in: {gs_dir}")
+        print(f"[DEBUG] Directory exists: {os.path.exists(gs_dir)}")
+        
+        if os.path.exists(gs_dir):
+            print(f"[DEBUG] Directory contents: {os.listdir(gs_dir)}")
+        else:
+            # If not found, list what's actually in the base path
+            print(f"[DEBUG] Base path contents: {os.listdir(base_path) if os.path.exists(base_path) else 'Base path does not exist'}")
+        
         # Try 64-bit, then 32-bit
         gs_exe = os.path.join(gs_dir, 'gswin64c.exe')
         print(f"[DEBUG] Checking for 64-bit version: {gs_exe}")
+        print(f"[DEBUG] 64-bit exists: {os.path.exists(gs_exe)}")
+        
         if not os.path.exists(gs_exe):
             print(f"[DEBUG] 64-bit version not found, checking 32-bit")
             gs_exe = os.path.join(gs_dir, 'gswin32c.exe')
             print(f"[DEBUG] Checking for 32-bit version: {gs_exe}")
+            print(f"[DEBUG] 32-bit exists: {os.path.exists(gs_exe)}")
     else:
         # Linux version
         gs_dir = os.path.join(base_path, 'bin', 'Ghostscript', 'Linux')
         print(f"[DEBUG] Looking for Ghostscript in: {gs_dir}")
+        print(f"[DEBUG] Directory exists: {os.path.exists(gs_dir)}")
+        
+        if os.path.exists(gs_dir):
+            print(f"[DEBUG] Directory contents: {os.listdir(gs_dir)}")
+        else:
+            # If not found, list what's actually in the base path
+            print(f"[DEBUG] Base path contents: {os.listdir(base_path) if os.path.exists(base_path) else 'Base path does not exist'}")
+            
         gs_exe = os.path.join(gs_dir, 'gs')
         print(f"[DEBUG] Checking for Linux version: {gs_exe}")
+        print(f"[DEBUG] Linux version exists: {os.path.exists(gs_exe)}")
     
     if os.path.exists(gs_exe):
         print(f"[DEBUG] Found Ghostscript at: {gs_exe}")
+        # Check if it's executable
+        if os.access(gs_exe, os.X_OK):
+            print(f"[DEBUG] Ghostscript is executable")
+        else:
+            print(f"[DEBUG] Warning: Ghostscript exists but is not executable")
     else:
         print(f"[DEBUG] Ghostscript not found at: {gs_exe}")
     

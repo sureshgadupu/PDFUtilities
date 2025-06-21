@@ -10,7 +10,23 @@ from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QFont
 from PyQt6.QtCore import Qt, QSize
 from gui.tabs import ConvertTab, CompressTab, MergeTab, SplitTab, ExtractTab, ConvertToImageTab
 from compressor import is_ghostscript_available
-from setup_ghostscript import setup_ghostscript
+
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        if hasattr(sys, '_MEIPASS'):
+            # One-file mode: files are extracted to a temporary directory
+            base_path = sys._MEIPASS
+        else:
+            # One-directory mode: files are in the same directory as the executable
+            base_path = os.path.dirname(sys.executable)
+    else:
+        # Running as script
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    
+    return os.path.join(base_path, relative_path)
 
 class PDFConverterApp(QMainWindow):
     def __init__(self):
@@ -18,27 +34,13 @@ class PDFConverterApp(QMainWindow):
         self.setWindowTitle("PDF Utility App")
         self.resize(1000, 700)
         
-        # Check for Ghostscript and set up if needed
+        # Check for Ghostscript availability
         if not is_ghostscript_available():
-            reply = QMessageBox.question(
+            QMessageBox.warning(
                 self,
-                "Ghostscript Setup",
-                "Ghostscript is required for PDF compression. Would you like to download and set it up now?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                "Ghostscript Not Found",
+                "Ghostscript is required for PDF compression features. Please ensure Ghostscript is installed on your system."
             )
-            if reply == QMessageBox.StandardButton.Yes:
-                if setup_ghostscript():
-                    QMessageBox.information(
-                        self,
-                        "Success",
-                        "Ghostscript has been set up successfully!"
-                    )
-                else:
-                    QMessageBox.warning(
-                        self,
-                        "Setup Failed",
-                        "Failed to set up Ghostscript. PDF compression features may not work."
-                    )
 
         self._setup_menu()
         self._setup_toolbar()
@@ -107,7 +109,9 @@ class PDFConverterApp(QMainWindow):
 
         def add_toolbar_button(icon_path, text, callback):
             btn = QToolButton()
-            btn.setIcon(QIcon(icon_path))
+            # Use the resource path function to get the correct icon path
+            full_icon_path = get_resource_path(icon_path)
+            btn.setIcon(QIcon(full_icon_path))
             btn.setText(text)
             btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
             btn.clicked.connect(callback)
@@ -174,13 +178,13 @@ class PDFConverterApp(QMainWindow):
         self.extract_tab = ExtractTab()
         self.convert_to_image_tab = ConvertToImageTab()
 
-        # Add tabs to widget
-        self.tab_widget.addTab(self.convert_tab, QIcon('gui/icons/file-text.svg'), "Convert to DOCX")
-        self.tab_widget.addTab(self.compress_tab, QIcon('gui/icons/archive.svg'), "Compress PDF")
-        self.tab_widget.addTab(self.merge_tab, QIcon('gui/icons/layers.svg'), "Merge PDFs")
-        self.tab_widget.addTab(self.split_tab, QIcon('gui/icons/scissors.svg'), "Split PDF")
-        self.tab_widget.addTab(self.extract_tab, QIcon('gui/icons/file-text.svg'), "Extract Text")
-        self.tab_widget.addTab(self.convert_to_image_tab, "Convert to Image")
+        # Add tabs to widget with proper icon paths
+        self.tab_widget.addTab(self.convert_tab, QIcon(get_resource_path('gui/icons/file-text.svg')), "Convert to DOCX")
+        self.tab_widget.addTab(self.compress_tab, QIcon(get_resource_path('gui/icons/archive.svg')), "Compress PDF")
+        self.tab_widget.addTab(self.merge_tab, QIcon(get_resource_path('gui/icons/layers.svg')), "Merge PDFs")
+        self.tab_widget.addTab(self.split_tab, QIcon(get_resource_path('gui/icons/scissors.svg')), "Split PDF")
+        self.tab_widget.addTab(self.extract_tab, QIcon(get_resource_path('gui/icons/file-text.svg')), "Extract Text")
+        self.tab_widget.addTab(self.convert_to_image_tab, QIcon(get_resource_path('gui/icons/image.svg')), "Convert to Image")
 
         # Connect tab change signal
         self.tab_widget.currentChanged.connect(self._update_start_button_text)
