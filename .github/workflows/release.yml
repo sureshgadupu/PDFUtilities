@@ -124,23 +124,104 @@ jobs:
     - name: Build macOS executable
       run: |
         echo "Building macOS executable for current architecture..."
+        echo "Current directory: $(pwd)"
+        echo "Python version: $(python --version)"
+        echo "Architecture: $(uname -m)"
+        
+        # Check if spec file exists
+        if [ ! -f "pdf_utility.spec" ]; then
+          echo "❌ Error: pdf_utility.spec not found!"
+          echo "Available files:"
+          ls -la
+          exit 1
+        fi
+        
+        echo "✅ pdf_utility.spec found"
+        
+        # Run the build with error checking
+        echo "Running build_app.py..."
         python build_app.py
+        
+        # Check build result
+        BUILD_EXIT_CODE=$?
+        echo "Build exit code: $BUILD_EXIT_CODE"
+        
+        if [ $BUILD_EXIT_CODE -ne 0 ]; then
+          echo "❌ Build failed with exit code: $BUILD_EXIT_CODE"
+          echo "Contents of current directory:"
+          ls -la
+          if [ -d "build" ]; then
+            echo "Contents of build directory:"
+            ls -la build/
+          fi
+          if [ -d "dist" ]; then
+            echo "Contents of dist directory:"
+            ls -la dist/
+          fi
+          exit 1
+        fi
+        
+        echo "✅ Build completed successfully"
+        
+    - name: Fallback build attempt
+      if: failure()
+      run: |
+        echo "Primary build failed, attempting fallback build..."
+        echo "Cleaning up any partial build artifacts..."
+        rm -rf build/ dist/ *.pyc __pycache__/
+        
+        # Try direct PyInstaller command
+        echo "Attempting direct PyInstaller build..."
+        pyinstaller pdf_utility.spec --noconfirm --clean --log-level=DEBUG
+        
+        # Check result
+        if [ -d "dist/PDFUtilities" ]; then
+          echo "✅ Fallback build successful"
+          ls -la dist/PDFUtilities/
+        else
+          echo "❌ Fallback build also failed"
+          echo "Final directory listing:"
+          ls -la
+          if [ -d "dist" ]; then
+            ls -la dist/
+          fi
+          exit 1
+        fi
         
     - name: Verify macOS build
       run: |
         echo "Verifying macOS build..."
+        echo "Contents of current directory:"
+        ls -la
+        
+        if [ -d "dist" ]; then
+          echo "Contents of dist directory:"
+          ls -la dist/
+        else
+          echo "❌ dist directory not found"
+          exit 1
+        fi
         
         if [ -d "dist/PDFUtilities" ]; then
           echo "✅ macOS build found"
           ls -la dist/PDFUtilities/
-          file dist/PDFUtilities/PDFUtilities
-          lipo -info dist/PDFUtilities/PDFUtilities || echo "lipo info not available"
+          
+          if [ -f "dist/PDFUtilities/PDFUtilities" ]; then
+            echo "✅ Executable file found"
+            file dist/PDFUtilities/PDFUtilities
+            lipo -info dist/PDFUtilities/PDFUtilities || echo "lipo info not available"
+          else
+            echo "❌ Executable file not found in dist/PDFUtilities/"
+            exit 1
+          fi
           
           # Determine architecture
           ARCH=$(uname -m)
           echo "Built on architecture: $ARCH"
         else
-          echo "❌ macOS build not found"
+          echo "❌ macOS build directory not found"
+          echo "Available directories in dist:"
+          ls -la dist/
           exit 1
         fi
         
@@ -150,6 +231,7 @@ jobs:
         name: PDFUtilities-macOS
         path: dist/PDFUtilities
         retention-days: 30
+      if: always() && hashFiles('dist/PDFUtilities/**') != ''
 
   create-release:
     needs: [build-windows, build-linux, build-macos]

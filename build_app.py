@@ -168,7 +168,7 @@ def build():
                 
                 # Check if it's a universal binary
                 try:
-                    result = subprocess.run(["lipo", "-info", "dist/PDFUtilities"], 
+                    result = subprocess.run(["lipo", "-info", "dist/PDFUtilities/PDFUtilities"], 
                                           capture_output=True, text=True, check=True)
                     print(f"Binary architecture info: {result.stdout.strip()}")
                 except subprocess.CalledProcessError:
