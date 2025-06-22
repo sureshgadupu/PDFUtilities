@@ -89,47 +89,62 @@ jobs:
         name: PDFUtilities-Linux
         path: ./linux-build
         
-    - name: Create release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-        
-    - name: Upload Windows executable
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./windows-build/PDFUtilities.exe
-        asset_name: PDFUtilities-Windows.exe
-        asset_content_type: application/octet-stream
-        
-    - name: Upload Linux executable
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./linux-build/PDFUtilities
-        asset_name: PDFUtilities-Linux
-        asset_content_type: application/octet-stream
-        
     - name: Create source archive
       run: |
         git archive --format=zip --output=PDFUtilities-Source.zip HEAD
         
-    - name: Upload source code
-      uses: actions/upload-release-asset@v1
+    - name: Create Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./PDFUtilities-Source.zip
-        asset_name: PDFUtilities-Source.zip
-        asset_content_type: application/zip 
+      run: |
+        # Extract version from tag
+        VERSION=${GITHUB_REF#refs/tags/}
+        RELEASE_NAME="PDF Utilities $VERSION"
+        
+        # Create release using GitHub CLI
+        gh release create $VERSION \
+          --title "$RELEASE_NAME" \
+          --notes "## PDF Utilities $VERSION
+        
+        ### Features
+        - PDF to DOCX conversion
+        - PDF compression with multiple quality levels
+        - PDF merging
+        - PDF splitting
+        - Text extraction
+        - PDF to image conversion
+        
+        ### Downloads
+        - Windows executable
+        - Linux executable
+        - Source code
+        
+        ### System Requirements
+        - Windows 10+ or Linux
+        - Python 3.11+ (for source installation)
+        
+        ### Installation
+        Download the appropriate executable for your platform and run it directly." \
+          --draft=false \
+          --prerelease=false
+        
+    - name: Upload Windows executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        gh release upload $VERSION ./windows-build/PDFUtilities.exe --clobber
+        
+    - name: Upload Linux executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        gh release upload $VERSION ./linux-build/PDFUtilities --clobber
+        
+    - name: Upload source code
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        gh release upload $VERSION ./PDFUtilities-Source.zip --clobber 
