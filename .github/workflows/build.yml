@@ -151,46 +151,23 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
         
-    - name: Build macOS executables
+    - name: Build macOS executable
       run: |
-        python build_macos.py
+        python build_app.py
         
-    - name: Upload macOS Intel artifact
+    - name: Upload macOS artifact
       uses: actions/upload-artifact@v4
       with:
-        name: PDFUtilities-macOS-Intel
-        path: dist/PDFUtilities-x86_64
-        retention-days: 30
-      if: hashFiles('dist/PDFUtilities-x86_64/**') != ''
-        
-    - name: Upload macOS Apple Silicon artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: PDFUtilities-macOS-AppleSilicon
-        path: dist/PDFUtilities-arm64
-        retention-days: 30
-      if: hashFiles('dist/PDFUtilities-arm64/**') != ''
-        
-    - name: Upload macOS Universal artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: PDFUtilities-macOS-Universal
+        name: PDFUtilities-macOS
         path: dist/PDFUtilities
         retention-days: 30
-      if: hashFiles('dist/PDFUtilities/**') != ''
         
     - name: Create release assets
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         mkdir -p release-assets
-        if [ -d "dist/PDFUtilities-x86_64" ]; then
-          cp -r dist/PDFUtilities-x86_64 release-assets/PDFUtilities-macOS-Intel
-        fi
-        if [ -d "dist/PDFUtilities-arm64" ]; then
-          cp -r dist/PDFUtilities-arm64 release-assets/PDFUtilities-macOS-AppleSilicon
-        fi
         if [ -d "dist/PDFUtilities" ]; then
-          cp -r dist/PDFUtilities release-assets/PDFUtilities-macOS-Universal
+          cp -r dist/PDFUtilities release-assets/PDFUtilities-macOS
         fi
         
     - name: Upload release assets
