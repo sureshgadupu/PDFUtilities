@@ -115,6 +115,92 @@ jobs:
         path: release-assets/
         retention-days: 90
 
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install system dependencies
+      run: |
+        # Install Homebrew if not already available
+        if ! command -v brew &> /dev/null; then
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+        
+        # Install required system libraries
+        brew install libpng jpeg zlib
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build macOS executables
+      run: |
+        python build_macos.py
+        
+    - name: Upload macOS Intel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-Intel
+        path: dist/PDFUtilities-x86_64
+        retention-days: 30
+      if: hashFiles('dist/PDFUtilities-x86_64/**') != ''
+        
+    - name: Upload macOS Apple Silicon artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-AppleSilicon
+        path: dist/PDFUtilities-arm64
+        retention-days: 30
+      if: hashFiles('dist/PDFUtilities-arm64/**') != ''
+        
+    - name: Upload macOS Universal artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-Universal
+        path: dist/PDFUtilities
+        retention-days: 30
+      if: hashFiles('dist/PDFUtilities/**') != ''
+        
+    - name: Create release assets
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        mkdir -p release-assets
+        if [ -d "dist/PDFUtilities-x86_64" ]; then
+          cp -r dist/PDFUtilities-x86_64 release-assets/PDFUtilities-macOS-Intel
+        fi
+        if [ -d "dist/PDFUtilities-arm64" ]; then
+          cp -r dist/PDFUtilities-arm64 release-assets/PDFUtilities-macOS-AppleSilicon
+        fi
+        if [ -d "dist/PDFUtilities" ]; then
+          cp -r dist/PDFUtilities release-assets/PDFUtilities-macOS-Universal
+        fi
+        
+    - name: Upload release assets
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-assets-macos
+        path: release-assets/
+        retention-days: 90
+
   test:
     runs-on: ubuntu-latest
     

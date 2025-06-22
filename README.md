@@ -1,6 +1,6 @@
 # PDF Utilities
 
-A modern, all-in-one application for professional PDF processing: **Convert, Compress, Merge, Split, and Extract**. Built with PyQt6 for a stunning, responsive user interface with optimized startup and beautiful splash screen.
+A comprehensive PDF processing application built with PyQt6, offering multiple PDF manipulation features in a modern, user-friendly interface.
 
 ## ✨ Features
 
@@ -22,6 +22,10 @@ A modern, all-in-one application for professional PDF processing: **Convert, Com
 
 - **Windows**: Download the latest release from [GitHub Releases](https://github.com/yourusername/PDFUtilities/releases)
 - **Linux**: Download the Linux executable from releases
+- **macOS**: Choose your architecture:
+  - **Intel Macs**: Download `PDFUtilities-macOS-Intel`
+  - **Apple Silicon (M1/M2/M3)**: Download `PDFUtilities-macOS-AppleSilicon`
+  - **Universal**: Download `PDFUtilities-macOS-Universal` (works on both)
 - **Source**: Clone the repository and follow development setup
 
 ### Run
@@ -31,6 +35,9 @@ A modern, all-in-one application for professional PDF processing: **Convert, Com
 PDFUtilities.exe
 
 # Linux
+./PDFUtilities
+
+# macOS
 ./PDFUtilities
 
 # From source
@@ -43,6 +50,7 @@ python main.py
 
 - Python 3.11+
 - Git
+- **macOS**: Homebrew (for system dependencies)
 
 ### Installation
 
@@ -74,8 +82,46 @@ python main.py
 pip install pyinstaller
 
 # Build the application
+# Windows/Linux
 python build_app.py
+
+# macOS (creates separate Intel and Apple Silicon builds)
+python build_macos.py
 ```
+
+## 🍎 macOS Build System
+
+The project includes a specialized macOS build system that creates separate executables for different architectures:
+
+### **Build Scripts**
+
+- **`build_app.py`**: General build script for Windows/Linux
+- **`build_macos.py`**: macOS-specific script with architecture support
+
+### **Architecture Support**
+
+- **Intel (x86_64)**: For Intel-based Macs
+- **Apple Silicon (arm64)**: For M1/M2/M3 Macs
+- **Universal**: Combined binary for both architectures
+
+### **Build Process**
+
+```bash
+# Run macOS build script
+python build_macos.py
+
+# Output directories:
+# dist/PDFUtilities-x86_64/     # Intel build
+# dist/PDFUtilities-arm64/      # Apple Silicon build
+# dist/PDFUtilities/            # Universal binary (if both succeed)
+```
+
+### **Benefits**
+
+- ✅ **Optimized Performance**: Architecture-specific builds run faster
+- ✅ **Smaller Downloads**: Users can download only what they need
+- ✅ **Better Compatibility**: Avoids Rosetta translation layer
+- ✅ **Fallback Support**: Universal binary as backup option
 
 ## 📁 Project Structure
 
@@ -102,10 +148,11 @@ This project uses GitHub Actions for automated builds and releases:
 ### **Build Workflow** (`.github/workflows/build.yml`)
 
 - **Triggers**: Push to `main`/`develop` branches, Pull Requests
-- **Platforms**: Windows and Linux
+- **Platforms**: Windows, Linux, and macOS
 - **Actions**:
   - ✅ Install dependencies
   - ✅ Build executables with PyInstaller
+  - ✅ **macOS**: Create separate Intel and Apple Silicon builds
   - ✅ Run basic tests
   - ✅ Upload build artifacts
   - ✅ Create release assets for main branch
@@ -115,8 +162,10 @@ This project uses GitHub Actions for automated builds and releases:
 - **Triggers**: Push tags (e.g., `v1.0.0`)
 - **Actions**:
   - ✅ Build Windows executable
+  - ✅ Build Linux executable
+  - ✅ Build macOS executables (Intel, Apple Silicon, Universal)
   - ✅ Create GitHub release
-  - ✅ Upload executable and source code
+  - ✅ Upload all platform executables and source code
 
 ### **Code Quality** (`.github/workflows/code-quality.yml`)
 

@@ -93,8 +93,98 @@ jobs:
         path: dist/PDFUtilities
         retention-days: 30
 
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install system dependencies
+      run: |
+        # Install Homebrew if not already available
+        if ! command -v brew &> /dev/null; then
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+        
+        # Install required system libraries
+        brew install libpng jpeg zlib
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build macOS executables
+      run: |
+        python build_macos.py
+        
+    - name: Verify macOS builds
+      run: |
+        echo "Verifying macOS builds..."
+        
+        # Check for Intel build
+        if [ -d "dist/PDFUtilities-x86_64" ]; then
+          echo "✅ Intel (x86_64) build found"
+          ls -la dist/PDFUtilities-x86_64/
+          file dist/PDFUtilities-x86_64/PDFUtilities
+          lipo -info dist/PDFUtilities-x86_64/PDFUtilities
+        else
+          echo "❌ Intel build not found"
+        fi
+        
+        # Check for Apple Silicon build
+        if [ -d "dist/PDFUtilities-arm64" ]; then
+          echo "✅ Apple Silicon (arm64) build found"
+          ls -la dist/PDFUtilities-arm64/
+          file dist/PDFUtilities-arm64/PDFUtilities
+          lipo -info dist/PDFUtilities-arm64/PDFUtilities
+        else
+          echo "❌ Apple Silicon build not found"
+        fi
+        
+        # Check for universal binary
+        if [ -d "dist/PDFUtilities" ]; then
+          echo "✅ Universal binary found"
+          ls -la dist/PDFUtilities/
+          file dist/PDFUtilities/PDFUtilities
+          lipo -info dist/PDFUtilities/PDFUtilities
+        else
+          echo "⚠️  Universal binary not found"
+        fi
+        
+    - name: Upload macOS Intel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-Intel
+        path: dist/PDFUtilities-x86_64
+        retention-days: 30
+      if: hashFiles('dist/PDFUtilities-x86_64/**') != ''
+        
+    - name: Upload macOS Apple Silicon artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-AppleSilicon
+        path: dist/PDFUtilities-arm64
+        retention-days: 30
+      if: hashFiles('dist/PDFUtilities-arm64/**') != ''
+        
+    - name: Upload macOS Universal artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-Universal
+        path: dist/PDFUtilities
+        retention-days: 30
+      if: hashFiles('dist/PDFUtilities/**') != ''
+
   create-release:
-    needs: [build-windows, build-linux]
+    needs: [build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     
     steps:
@@ -115,11 +205,32 @@ jobs:
         name: PDFUtilities-Linux
         path: ./linux-build
         
+    - name: Download macOS Intel artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: PDFUtilities-macOS-Intel
+        path: ./macos-intel-build
+        
+    - name: Download macOS Apple Silicon artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: PDFUtilities-macOS-AppleSilicon
+        path: ./macos-arm64-build
+        
+    - name: Download macOS Universal artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: PDFUtilities-macOS-Universal
+        path: ./macos-universal-build
+        
     - name: Verify artifacts
       run: |
         echo "Verifying downloaded artifacts..."
         ls -la ./windows-build/
         ls -la ./linux-build/
+        ls -la ./macos-intel-build/
+        ls -la ./macos-arm64-build/
+        ls -la ./macos-universal-build/
         
         if [ ! -f "./windows-build/PDFUtilities.exe" ]; then
           echo "Error: Windows executable not found"
@@ -128,6 +239,12 @@ jobs:
         
         if [ ! -f "./linux-build/PDFUtilities" ]; then
           echo "Error: Linux executable not found"
+          exit 1
+        fi
+        
+        # Check for at least one macOS build
+        if [ ! -f "./macos-intel-build/PDFUtilities" ] && [ ! -f "./macos-arm64-build/PDFUtilities" ] && [ ! -f "./macos-universal-build/PDFUtilities" ]; then
+          echo "Error: No macOS executable found"
           exit 1
         fi
         
@@ -164,14 +281,23 @@ jobs:
         ### Downloads
         - Windows executable
         - Linux executable
+        - macOS Intel (x86_64) executable
+        - macOS Apple Silicon (arm64) executable
+        - macOS Universal binary (Intel + Apple Silicon)
         - Source code
         
         ### System Requirements
-        - Windows 10+ or Linux
+        - Windows 10+ or Linux or macOS 10.15+
         - Python 3.11+ (for source installation)
         
         ### Installation
-        Download the appropriate executable for your platform and run it directly." \
+        Download the appropriate executable for your platform and run it directly.
+        
+        ### macOS Notes
+        - Choose Intel build for Intel Macs
+        - Choose Apple Silicon build for M1/M2/M3 Macs
+        - Universal binary works on both architectures
+        - May require security permissions on first run (System Preferences > Security & Privacy)" \
           --draft=false \
           --prerelease=false
         
@@ -194,6 +320,45 @@ jobs:
         echo "Uploading Linux executable for version: $VERSION"
         gh release upload $VERSION ./linux-build/PDFUtilities --clobber
         echo "Linux executable uploaded successfully"
+        
+    - name: Upload macOS Intel executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        if [ -f "./macos-intel-build/PDFUtilities" ]; then
+          echo "Uploading macOS Intel executable for version: $VERSION"
+          gh release upload $VERSION ./macos-intel-build/PDFUtilities --clobber
+          echo "macOS Intel executable uploaded successfully"
+        else
+          echo "macOS Intel executable not found, skipping upload"
+        fi
+        
+    - name: Upload macOS Apple Silicon executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        if [ -f "./macos-arm64-build/PDFUtilities" ]; then
+          echo "Uploading macOS Apple Silicon executable for version: $VERSION"
+          gh release upload $VERSION ./macos-arm64-build/PDFUtilities --clobber
+          echo "macOS Apple Silicon executable uploaded successfully"
+        else
+          echo "macOS Apple Silicon executable not found, skipping upload"
+        fi
+        
+    - name: Upload macOS Universal executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        if [ -f "./macos-universal-build/PDFUtilities" ]; then
+          echo "Uploading macOS Universal executable for version: $VERSION"
+          gh release upload $VERSION ./macos-universal-build/PDFUtilities --clobber
+          echo "macOS Universal executable uploaded successfully"
+        else
+          echo "macOS Universal executable not found, skipping upload"
+        fi
         
     - name: Upload source code
       env:

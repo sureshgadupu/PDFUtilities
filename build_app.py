@@ -127,6 +127,11 @@ def build():
     elif system == "Linux":
         print("Running build for Linux...")
         cleanup_dist_folder()
+    elif system == "Darwin":  # macOS
+        print("Running build for macOS...")
+        cleanup_dist_folder()
+        # macOS-specific setup
+        print("macOS build detected - ensuring proper permissions...")
     else:
         print(f"Unsupported operating system: {system}")
         sys.exit(1)
@@ -152,8 +157,24 @@ def build():
             print("Build completed successfully.")
             print(f"You can find the executable in the 'dist' folder.")
 
-            # Verify Ghostscript inclusion
-            verify_ghostscript_inclusion()
+            # Platform-specific post-build steps
+            if system == "Windows":
+                # Verify Ghostscript inclusion
+                verify_ghostscript_inclusion()
+            elif system == "Darwin":  # macOS
+                print("\nmacOS build completed successfully!")
+                print("Note: The executable may require security permissions on first run.")
+                print("Users may need to go to System Preferences > Security & Privacy to allow the app.")
+                
+                # Check if it's a universal binary
+                try:
+                    result = subprocess.run(["lipo", "-info", "dist/PDFUtilities"], 
+                                          capture_output=True, text=True, check=True)
+                    print(f"Binary architecture info: {result.stdout.strip()}")
+                except subprocess.CalledProcessError:
+                    print("Could not determine binary architecture info")
+                except FileNotFoundError:
+                    print("lipo command not available")
         else:
             print(f"Build failed with return code: {process.returncode}")
             sys.exit(1)
@@ -165,6 +186,11 @@ def build():
             print("1. The application is not currently running")
             print("2. No other process is using the executable")
             print("3. You have write permissions to the project directory")
+        elif system == "Darwin":
+            print("macOS build failed. Common issues:")
+            print("1. Missing system dependencies (try: brew install libpng jpeg zlib)")
+            print("2. Python environment issues")
+            print("3. PyInstaller configuration problems")
         sys.exit(1)
 
 

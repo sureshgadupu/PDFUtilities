@@ -1,0 +1,4037 @@
+Run black --check --diff .
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/__init__.py	2025-06-21 11:46:30.040305+00:00
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/__init__.py
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/__init__.py	2025-06-21 11:46:32.674220+00:00
+@@ -1,3 +1,3 @@
+ """
+ GUI package for PDF Utility App
+-""" 
+\ No newline at end of file
++"""
+--- /home/runner/work/PDFUtilities/PDFUtilities/converter.py	2025-06-21 11:46:30.040305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/converter.py	2025-06-21 11:46:32.727300+00:00
+@@ -1,36 +1,38 @@
+ import os
+-from pdf2docx import Converter # Assuming you use pdf2docx
++from pdf2docx import Converter  # Assuming you use pdf2docx
+ 
+ # Placeholder for potential Qt threading if needed later
+ # from PyQt6.QtCore import QObject, pyqtSignal
++
+ 
+ def convert_single_pdf_to_docx(pdf_path, docx_path):
+     """Converts a single PDF file to DOCX and returns success status and a message."""
+     try:
+         # Ensure output directory for the docx_path exists
+         os.makedirs(os.path.dirname(docx_path), exist_ok=True)
+-        
++
+         cv = Converter(pdf_path)
+         cv.convert(docx_path, start=0, end=None)
+         cv.close()
+         return True, f"Successfully converted {os.path.basename(pdf_path)} to DOCX."
+     except Exception as e:
+         return False, f"Error converting {os.path.basename(pdf_path)}: {str(e)}"
++
+ 
+ def convert_multiple_pdfs_to_docx(pdf_files, output_directory, progress_callback=None, status_callback=None):
+     """
+     Converts a list of PDF files to DOCX format, saving them in the output_directory.
+ 
+     Args:
+         pdf_files (list): A list of paths to PDF files.
+         output_directory (str): The directory to save converted DOCX files.
+-        progress_callback (function, optional): 
+-            A function to call for progress updates. 
++        progress_callback (function, optional):
++            A function to call for progress updates.
+             Expected to take (current_value, max_value).
+-        status_callback (function, optional): 
+-            A function to call for status messages. 
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/converter.py
++        status_callback (function, optional):
++            A function to call for status messages.
+             Expected to take (message_string).
+     Returns:
+         tuple: (list_of_successful_conversion_messages, list_of_failed_conversion_messages)
+     """
+     if not pdf_files:
+@@ -42,18 +44,18 @@
+         try:
+             os.makedirs(output_directory)
+         except OSError as e:
+             if status_callback:
+                 status_callback(f"Error creating output directory {output_directory}: {e}")
+-            return [], [f"Error creating output directory {output_directory}: {e}"] # Or handle differently
++            return [], [f"Error creating output directory {output_directory}: {e}"]  # Or handle differently
+ 
+     successful_messages = []
+     failed_messages = []
+     total_files = len(pdf_files)
+ 
+     if progress_callback:
+-        progress_callback(0, total_files) # Initialize progress
++        progress_callback(0, total_files)  # Initialize progress
+ 
+     for index, pdf_file in enumerate(pdf_files):
+         base_name = os.path.basename(pdf_file)
+         docx_name = os.path.splitext(base_name)[0] + ".docx"
+         docx_path = os.path.join(output_directory, docx_name)
+@@ -65,23 +67,21 @@
+ 
+         if success:
+             successful_messages.append(message)
+         else:
+             failed_messages.append(message)
+-        
+-        if status_callback: # Update status after each attempt
+-             status_callback(message)
+ 
++        if status_callback:  # Update status after each attempt
++            status_callback(message)
+ 
+         if progress_callback:
+             progress_callback(index + 1, total_files)
+ 
+     final_status = f"Conversion finished. {len(successful_messages)} succeeded, {len(failed_messages)} failed."
+     if status_callback:
+         status_callback(final_status)
+-    
+-    if not successful_messages and not failed_messages and total_files > 0: # Should not happen if logic is correct
++
++    if not successful_messages and not failed_messages and total_files > 0:  # Should not happen if logic is correct
+         if status_callback:
+             status_callback("Conversion process completed, but no files were processed.")
+ 
+-
+-    return successful_messages, failed_messages 
+\ No newline at end of file
++    return successful_messages, failed_messages
+--- /home/runner/work/PDFUtilities/PDFUtilities/build_app.py	2025-06-21 11:46:30.039305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/build_app.py	2025-06-21 11:46:32.793051+00:00
+@@ -2,10 +2,11 @@
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/build_app.py
+ import platform
+ import subprocess
+ import sys
+ import shutil
+ import time
++
+ 
+ def install_pyinstaller():
+     """Installs PyInstaller using pip."""
+     print("Installing PyInstaller...")
+     try:
+@@ -13,38 +14,42 @@
+         print("PyInstaller installed successfully.")
+     except subprocess.CalledProcessError as e:
+         print(f"Failed to install PyInstaller: {e}")
+         sys.exit(1)
+ 
++
+ def check_pyinstaller():
+     """Checks if PyInstaller is installed."""
+     try:
+         import PyInstaller
+     except ImportError:
+         print("PyInstaller is not installed.")
+         install_pyinstaller()
+ 
++
+ def create_dummy_icon():
+     """Creates a valid dummy icon file to prevent build errors on Windows, overwriting if it exists."""
+-    icon_path = os.path.join('gui', 'icons', 'image.ico')
++    icon_path = os.path.join("gui", "icons", "image.ico")
+     print(f"Ensuring dummy icon file is valid at {icon_path}")
+     os.makedirs(os.path.dirname(icon_path), exist_ok=True)
+     try:
+         from PIL import Image
++
+         # Create a 16x16 transparent pixel icon, overwriting any existing file
+-        img = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+-        img.save(icon_path, 'ICO')
++        img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
++        img.save(icon_path, "ICO")
+         print("Dummy .ico file created/updated successfully.")
+     except ImportError:
+         print("Pillow library not found. Cannot create a dummy icon.")
+         print("The build will likely fail. Please install Pillow (`pip install Pillow`) or provide a valid 'image.ico' file.")
+     except Exception as e:
+         print(f"Failed to create dummy icon: {e}")
+ 
++
+ def cleanup_dist_folder():
+     """Clean up the dist folder to avoid permission errors."""
+-    dist_path = 'dist'
++    dist_path = "dist"
+     if os.path.exists(dist_path):
+         print(f"Cleaning up {dist_path} folder...")
+         try:
+             # Try to remove the entire dist folder
+             shutil.rmtree(dist_path)
+@@ -56,114 +61,112 @@
+         except Exception as e:
+             print(f"Warning: Error cleaning up {dist_path}: {e}")
+             return False
+     return True
+ 
++
+ def verify_ghostscript_inclusion():
+     """Verify that Ghostscript files are included in the built executable."""
+     print("\nVerifying Ghostscript inclusion in built executable...")
+-    
+-    dist_path = os.path.join('dist', 'PDFUtilities')
++
++    dist_path = os.path.join("dist", "PDFUtilities")
+     if not os.path.exists(dist_path):
+         print(f"Warning: Dist folder not found at {dist_path}")
+         return
+-    
++
+     # Check for Ghostscript files in the dist folder
+-    gs_dir = os.path.join(dist_path, 'bin', 'Ghostscript', 'Windows')
++    gs_dir = os.path.join(dist_path, "bin", "Ghostscript", "Windows")
+     if os.path.exists(gs_dir):
+         print(f"+ Ghostscript directory found: {gs_dir}")
+         files = os.listdir(gs_dir)
+         print(f"  Files in directory: {files}")
+-        
++
+         # Check specific files
+-        expected_files = ['gswin32.exe', 'gswin32c.exe', 'gswin64.exe', 'gswin64c.exe']
++        expected_files = ["gswin32.exe", "gswin32c.exe", "gswin64.exe", "gswin64c.exe"]
+         for file in expected_files:
+             file_path = os.path.join(gs_dir, file)
+             if os.path.exists(file_path):
+                 size = os.path.getsize(file_path)
+                 print(f"  + {file}: {size} bytes")
+             else:
+                 print(f"  - {file}: MISSING")
+     else:
+         print(f"- Ghostscript directory NOT found: {gs_dir}")
+-        
++
+         # Let's see what's actually in the dist folder
+         print("Contents of dist folder:")
+         try:
+             for root, dirs, files in os.walk(dist_path):
+-                level = root.replace(dist_path, '').count(os.sep)
+-                indent = ' ' * 2 * level
+-                print(f'{indent}{os.path.basename(root)}/')
+-                subindent = ' ' * 2 * (level + 1)
++                level = root.replace(dist_path, "").count(os.sep)
++                indent = " " * 2 * level
++                print(f"{indent}{os.path.basename(root)}/")
++                subindent = " " * 2 * (level + 1)
+                 for file in files:
+-                    print(f'{subindent}{file}')
++                    print(f"{subindent}{file}")
+         except Exception as e:
+             print(f"Error listing dist contents: {e}")
++
+ 
+ def build():
+     """Builds the application using PyInstaller."""
+     check_pyinstaller()
+-    
++
+     system = platform.system()
+-    spec_file = 'pdf_utility.spec'
++    spec_file = "pdf_utility.spec"
+ 
+     if not os.path.exists(spec_file):
+         print(f"Error: {spec_file} not found!")
+         sys.exit(1)
+-        
+-    if system == 'Windows':
++
++    if system == "Windows":
+         print("Running build for Windows...")
+         create_dummy_icon()
+         # Clean up dist folder to avoid permission errors
+         if not cleanup_dist_folder():
+             print("Build aborted due to cleanup issues.")
+             sys.exit(1)
+-    elif system == 'Linux':
++    elif system == "Linux":
+         print("Running build for Linux...")
+         cleanup_dist_folder()
+     else:
+         print(f"Unsupported operating system: {system}")
+         sys.exit(1)
+ 
+     # Common build command with verbose output
+-    command = [
+-        'pyinstaller',
+-        spec_file,
+-        '--noconfirm',
+-        '--clean',
+-        '--log-level=INFO'  # Add verbose logging
+-    ]
+-    
++    command = ["pyinstaller", spec_file, "--noconfirm", "--clean", "--log-level=INFO"]  # Add verbose logging
++
+     print(f"Running command: {' '.join(command)}")
+-    
++
+     try:
+         # Run with real-time output
+-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+-                                 universal_newlines=True, bufsize=1)
+-        
++        process = subprocess.Popen(
++            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1
++        )
++
+         # Print output in real-time
+         for line in process.stdout:
+             print(line.rstrip())
+-        
++
+         process.wait()
+-        
++
+         if process.returncode == 0:
+             print("Build completed successfully.")
+             print(f"You can find the executable in the 'dist' folder.")
+-            
++
+             # Verify Ghostscript inclusion
+             verify_ghostscript_inclusion()
+         else:
+             print(f"Build failed with return code: {process.returncode}")
+             sys.exit(1)
+-            
++
+     except subprocess.CalledProcessError as e:
+         print(f"Build failed: {e}")
+-        if system == 'Windows':
++        if system == "Windows":
+             print("If you see permission errors, make sure:")
+             print("1. The application is not currently running")
+             print("2. No other process is using the executable")
+             print("3. You have write permissions to the project directory")
+         sys.exit(1)
+ 
+-if __name__ == '__main__':
+-    build() 
+\ No newline at end of file
++
++if __name__ == "__main__":
++    build()
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/base_tab.py	2025-06-21 11:46:30.040305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/base_tab.py	2025-06-21 11:46:32.849895+00:00
+@@ -1,12 +1,23 @@
+ from PyQt6.QtWidgets import (
+-    QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, 
+-    QPushButton, QLabel, QRadioButton, QLineEdit, QFileDialog, QHeaderView, QProgressBar
++    QWidget,
++    QVBoxLayout,
++    QHBoxLayout,
++    QTableWidget,
++    QTableWidgetItem,
++    QPushButton,
++    QLabel,
++    QRadioButton,
++    QLineEdit,
++    QFileDialog,
++    QHeaderView,
++    QProgressBar,
+ )
+ from PyQt6.QtCore import Qt, QSize
+ from PyQt6.QtGui import QIcon
+ import os
++
+ 
+ class BaseTab(QWidget):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self._setup_common_ui()
+@@ -29,11 +40,12 @@
+         layout.addWidget(self.file_table)
+ 
+         # Progress Bar
+         self.progress_bar = QProgressBar()
+         self.progress_bar.setVisible(False)
+-        self.progress_bar.setStyleSheet("""
++        self.progress_bar.setStyleSheet(
++            """
+             QProgressBar {
+                 border: 1px solid #b2e0f7;
+                 border-radius: 4px;
+                 text-align: center;
+                 background: #ffffff;
+@@ -41,11 +53,12 @@
+             }
+             QProgressBar::chunk {
+                 background: #00bfff;
+                 border-radius: 3px;
+             }
+-        """)
++        """
++        )
+         layout.addWidget(self.progress_bar)
+ 
+         # Status Label
+         self.status_label = QLabel("")
+         self.status_label.setStyleSheet("color: #000; font-size: 14px;")
+@@ -53,11 +66,12 @@
+ 
+         # Start Button
+         start_layout = QHBoxLayout()
+         start_layout.addStretch()
+         self.start_btn = QPushButton("Start")
+-        self.start_btn.setStyleSheet("""
++        self.start_btn.setStyleSheet(
++            """
+             QPushButton {
+                 background: #00bfff;
+                 color: #000;
+                 border: none;
+                 border-radius: 4px;
+@@ -70,28 +84,32 @@
+                 background: #009fd6;
+             }
+             QPushButton:pressed {
+                 background: #007fa3;
+             }
+-        """)
++        """
++        )
+         start_layout.addWidget(self.start_btn)
+         layout.addLayout(start_layout)
+ 
+         # Output Folder Label
+         output_folder_label = QLabel("Output Folder")
+-        output_folder_label.setStyleSheet("font-weight: bold; font-size: 15px; margin-top: 12px; margin-bottom: 4px;color: #000;")
++        output_folder_label.setStyleSheet(
++            "font-weight: bold; font-size: 15px; margin-top: 12px; margin-bottom: 4px;color: #000;"
++        )
+         layout.addWidget(output_folder_label)
+ 
+         # Output Folder Selection
+         output_layout = QHBoxLayout()
+         output_label = QLabel("Output:")
+         output_label.setStyleSheet("color: #000;")
+         output_layout.addWidget(output_label)
+ 
+         # Radio buttons for output folder
+         self.same_folder_radio = QRadioButton("Same as input")
+-        self.same_folder_radio.setStyleSheet("""
++        self.same_folder_radio.setStyleSheet(
++            """
+             QRadioButton {
+                 color: #000;
+                 padding: 4px;
+                 margin-right: 8px;
+             }
+@@ -106,13 +124,15 @@
+                 border: 1px solid #000;
+             }
+             QRadioButton::indicator:unchecked {
+                 background-color: white;
+             }
+-        """)
++        """
++        )
+         self.custom_folder_radio = QRadioButton("Custom folder")
+-        self.custom_folder_radio.setStyleSheet("""
++        self.custom_folder_radio.setStyleSheet(
++            """
+             QRadioButton {
+                 color: #000;
+                 padding: 4px;
+                 margin-right: 8px;
+             }
+@@ -127,20 +147,22 @@
+                 border: 1px solid #000;
+             }
+             QRadioButton::indicator:unchecked {
+                 background-color: white;
+             }
+-        """)
++        """
++        )
+         self.same_folder_radio.setChecked(True)
+         output_layout.addWidget(self.same_folder_radio)
+         output_layout.addWidget(self.custom_folder_radio)
+         self.output_path = QLineEdit()
+         self.output_path.setPlaceholderText("Select output folder...")
+         self.output_path.setEnabled(False)
+         output_layout.addWidget(self.output_path)
+         self.browse_btn = QPushButton("Browse")
+-        self.browse_btn.setStyleSheet("""
++        self.browse_btn.setStyleSheet(
++            """
+             QPushButton {
+                 background: #00bfff;
+                 color: #000;
+                 border: none;
+                 border-radius: 4px;
+@@ -153,20 +175,22 @@
+                 background: #009fd6;
+             }
+             QPushButton:pressed {
+                 background: #007fa3;
+             }
+-        """)
++        """
++        )
+         self.browse_btn.setEnabled(False)
+         self.browse_btn.clicked.connect(self._browse_folder)
+         output_layout.addWidget(self.browse_btn)
+         layout.addLayout(output_layout)
+         self.custom_folder_radio.toggled.connect(self._toggle_custom_output)
+ 
+     def _apply_common_styles(self):
+         # Apply the same styles from main_window.py
+-        self.setStyleSheet("""
++        self.setStyleSheet(
++            """
+             QWidget {
+                 background: #d6f0fa;
+             }
+             QTableWidget {
+                 background: #ffffff;
+@@ -211,11 +235,12 @@
+                 color: #000;
+                 border: 1px solid #b2e0f7;
+                 border-radius: 6px;
+                 padding: 4px 8px;
+             }
+-        """)
++        """
++        )
+ 
+     def _toggle_custom_output(self, checked):
+         self.output_path.setEnabled(checked)
+         self.browse_btn.setEnabled(checked)
+ 
+@@ -237,35 +262,35 @@
+         """Add a file to the table with its name and size"""
+         try:
+             file_name = os.path.basename(file_path)
+             file_size = os.path.getsize(file_path)
+             row = self.file_table.rowCount()
+-            
++
+             # Disable sorting and updates temporarily
+             self.file_table.setUpdatesEnabled(False)
+-            
++
+             # Insert row and set items
+             self.file_table.insertRow(row)
+             name_item = QTableWidgetItem(file_name)
+             name_item.setToolTip(file_path)
+             size_item = QTableWidgetItem(self._format_size(file_size))
+-            
++
+             self.file_table.setItem(row, 0, name_item)
+             self.file_table.setItem(row, 1, size_item)
+-            
++
+             # Re-enable sorting and updates
+             self.file_table.setUpdatesEnabled(True)
+-            
++
+         except Exception as e:
+             print(f"Error adding file {file_path}: {str(e)}")
+ 
+     def add_files_to_table(self, file_paths):
+         """Add multiple files to the table efficiently"""
+         try:
+             # Disable sorting and updates temporarily
+             self.file_table.setUpdatesEnabled(False)
+-            
++
+             # Prepare all items first
+             items_to_add = []
+             for file_path in file_paths:
+                 try:
+                     file_name = os.path.basename(file_path)
+@@ -274,23 +299,23 @@
+                     name_item.setToolTip(file_path)
+                     size_item = QTableWidgetItem(self._format_size(file_size))
+                     items_to_add.append((name_item, size_item))
+                 except Exception as e:
+                     print(f"Error processing file {file_path}: {str(e)}")
+-            
++
+             # Add all rows at once
+             start_row = self.file_table.rowCount()
+             self.file_table.setRowCount(start_row + len(items_to_add))
+-            
++
+             # Set all items
+             for i, (name_item, size_item) in enumerate(items_to_add):
+                 self.file_table.setItem(start_row + i, 0, name_item)
+                 self.file_table.setItem(start_row + i, 1, size_item)
+-            
++
+             # Re-enable sorting and updates
+             self.file_table.setUpdatesEnabled(True)
+-            
++
+         except Exception as e:
+             print(f"Error adding files: {str(e)}")
+             # Make sure to re-enable updates even if there's an error
+             self.file_table.setUpdatesEnabled(True)
+ 
+@@ -320,6 +345,6 @@
+             files = self.get_selected_files()
+             if files:
+                 return os.path.dirname(files[0])
+             return None
+         else:
+-            return self.output_path.text() if self.output_path.text() else None 
+\ No newline at end of file
++            return self.output_path.text() if self.output_path.text() else None
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/base_tab.py
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/custom_widgets.py	2025-06-21 11:46:30.040305+00:00
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/custom_widgets.py
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/custom_widgets.py	2025-06-21 11:46:32.878213+00:00
+@@ -1,20 +1,23 @@
+ from PyQt6.QtWidgets import QListWidget, QListWidgetItem
++
+ 
+ class ToggleListWidget(QListWidget):
+     def mousePressEvent(self, event):
+         item = self.itemAt(event.pos())
+         if item is not None:
+             # Toggle selection: if already selected, deselect; otherwise select.
+             # This overrides the default behavior which might require Ctrl for deselection
+             # depending on the selection mode.
+             current_selection_mode = self.selectionMode()
+-            if current_selection_mode == QListWidget.SelectionMode.MultiSelection or \
+-               current_selection_mode == QListWidget.SelectionMode.ExtendedSelection:
++            if (
++                current_selection_mode == QListWidget.SelectionMode.MultiSelection
++                or current_selection_mode == QListWidget.SelectionMode.ExtendedSelection
++            ):
+                 item.setSelected(not item.isSelected())
+-            else: # SingleSelection or NoSelection
+-                super().mousePressEvent(event) # Default behavior for other modes
++            else:  # SingleSelection or NoSelection
++                super().mousePressEvent(event)  # Default behavior for other modes
+         else:
+             # If clicked outside an item, clear selection if in a multi-selection mode
+             if self.selectionMode() != QListWidget.SelectionMode.SingleSelection:
+-                 self.clearSelection()
+-            super().mousePressEvent(event) 
+\ No newline at end of file
++                self.clearSelection()
++            super().mousePressEvent(event)
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/extract_text_tab.py	2025-06-21 11:46:30.040305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/extract_text_tab.py	2025-06-21 11:46:32.892275+00:00
+@@ -1,13 +1,14 @@
+ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
+ from PyQt6.QtCore import Qt
+ from PyQt6.QtGui import QFont
++
+ 
+ class ExtractTextTab(QWidget):
+     def __init__(self):
+         super().__init__()
+         layout = QVBoxLayout(self)
+         label = QLabel("Extract Text (Coming Soon)")
+         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+-        label.setFont(QFont('Arial', 16, QFont.Weight.Bold))
++        label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+         layout.addWidget(label)
+-        self.setStyleSheet("background-color: #f0f0f0;") 
+\ No newline at end of file
++        self.setStyleSheet("background-color: #f0f0f0;")
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/extract_text_tab.py
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/compress_tab.py	2025-06-21 11:46:30.040305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/compress_tab.py	2025-06-21 11:46:32.952634+00:00
+@@ -1,15 +1,28 @@
+ from PyQt6.QtWidgets import (
+-    QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QListWidget, QListWidgetItem,
+-    QHBoxLayout, QRadioButton, QButtonGroup, QLineEdit, QFileDialog, QMessageBox, QGroupBox,
+-    QMenu
++    QWidget,
++    QVBoxLayout,
++    QLabel,
++    QPushButton,
++    QProgressBar,
++    QListWidget,
++    QListWidgetItem,
++    QHBoxLayout,
++    QRadioButton,
++    QButtonGroup,
++    QLineEdit,
++    QFileDialog,
++    QMessageBox,
++    QGroupBox,
++    QMenu,
+ )
+ from PyQt6.QtCore import Qt, QStandardPaths
+ from PyQt6.QtGui import QFont, QAction
+ from workers import CompressionWorker
+ import os
+ 
++
+ class CompressTab(QWidget):
+     def __init__(self, parent=None):
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/compress_tab.py
+         super().__init__(parent)
+         self.worker = None
+         self._setup_ui()
+@@ -17,27 +30,30 @@
+     def _setup_ui(self):
+         layout = QVBoxLayout(self)
+ 
+         # Title
+         title_label = QLabel("PDF Compression")
+-        title_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))
++        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+-        title_label.setStyleSheet("""
++        title_label.setStyleSheet(
++            """
+             color: #000000;
+             background-color: #f0f0f0;
+             padding: 22px 0 16px 0;
+             border-bottom: 1.5px solid #cccccc;
+             border-radius: 8px 8px 0 0;
+-        """)
++        """
++        )
+         layout.addWidget(title_label)
+ 
+         # File list
+         self.file_list = QListWidget()
+         self.file_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
+         self.file_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+         self.file_list.customContextMenuRequested.connect(self._show_context_menu)
+-        self.file_list.setStyleSheet("""
++        self.file_list.setStyleSheet(
++            """
+             QListWidget {
+                 background-color: #ffffff;
+                 color: #222222;
+                 border: 1.5px solid #a0a0a0;
+                 border-radius: 4px;
+@@ -49,11 +65,12 @@
+             }
+             QListWidget::item:selected {
+                 background: #b7d6fb;
+                 color: #222222;
+             }
+-        """)
++        """
++        )
+         layout.addWidget(self.file_list)
+ 
+         # File selection buttons
+         button_layout = QHBoxLayout()
+         self.select_button = QPushButton("Select PDF Files")
+@@ -128,11 +145,12 @@
+ 
+         self.setLayout(layout)
+         self._apply_styles()
+ 
+     def _apply_styles(self):
+-        self.setStyleSheet("""
++        self.setStyleSheet(
++            """
+             CompressTab {
+                 background-color: #f3f4f6;
+             }
+             QPushButton {
+                 background-color: #808080;
+@@ -170,11 +188,12 @@
+                 border-radius: 5px;
+             }
+             QLabel {
+                 color: #000000;
+             }
+-        """)
++        """
++        )
+ 
+     def _show_context_menu(self, position):
+         if self.file_list.count() > 0:
+             menu = QMenu()
+             remove_action = QAction("Remove Selected", self)
+@@ -203,11 +222,11 @@
+     def _select_files(self):
+         files, _ = QFileDialog.getOpenFileNames(
+             self,
+             "Select PDF Files",
+             QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
+-            "PDF Files (*.pdf)"
++            "PDF Files (*.pdf)",
+         )
+         if files:
+             for f in files:
+                 item = QListWidgetItem(f)
+                 item.setToolTip(f)
+@@ -271,15 +290,11 @@
+         self.progress_bar.setValue(0)
+         self.progress_bar.setVisible(True)
+         self.status_label.setText("Starting compression...")
+         self.status_label.setStyleSheet("color: white;")
+         self.worker = CompressionWorker(
+-            pdf_files,
+-            output_directory,
+-            compression_mode=compression_mode,
+-            target_size_kb=target_size_value,
+-            parent=self
++            pdf_files, output_directory, compression_mode=compression_mode, target_size_kb=target_size_value, parent=self
+         )
+         self.worker.progress.connect(self._update_progress_bar)
+         self.worker.status_update.connect(self._update_status_label)
+         self.worker.finished.connect(self._handle_compression_finished)
+         self.worker.error.connect(self._handle_compression_error)
+@@ -325,6 +340,6 @@
+         self.status_label.setStyleSheet("color: red;")
+         self.progress_bar.setVisible(False)
+         QMessageBox.critical(self, "Compression Error", error_message)
+         self.worker = None
+         self.compress_button.setEnabled(True)
+-        self.select_button.setEnabled(True) 
+\ No newline at end of file
++        self.select_button.setEnabled(True)
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/split_tab.py	2025-06-21 11:46:30.041305+00:00
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/split_tab.py
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/split_tab.py	2025-06-21 11:46:32.969337+00:00
+@@ -1,13 +1,14 @@
+ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
+ from PyQt6.QtCore import Qt
+ from PyQt6.QtGui import QFont
++
+ 
+ class SplitTab(QWidget):
+     def __init__(self):
+         super().__init__()
+         layout = QVBoxLayout(self)
+         label = QLabel("Split PDF (Coming Soon)")
+         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+-        label.setFont(QFont('Arial', 16, QFont.Weight.Bold))
++        label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+         layout.addWidget(label)
+-        self.setStyleSheet("background-color: #f0f0f0;") 
+\ No newline at end of file
++        self.setStyleSheet("background-color: #f0f0f0;")
+--- /home/runner/work/PDFUtilities/PDFUtilities/compressor.py	2025-06-21 11:46:30.039305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/compressor.py	2025-06-21 11:46:32.978622+00:00
+@@ -2,10 +2,11 @@
+ import fitz  # PyMuPDF
+ import shutil
+ import subprocess
+ import sys
+ import platform
++
+ 
+ def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True):
+     """
+     Compress a PDF by recompressing images and optionally removing metadata.
+     Args:
+@@ -32,10 +33,11 @@
+                 # Only recompress JPEG or PNG images
+                 if img_ext.lower() in ["jpeg", "jpg", "png"]:
+                     try:
+                         import io
+                         from PIL import Image
++
+                         pil_img = Image.open(io.BytesIO(image_bytes))
+                         img_io = io.BytesIO()
+                         pil_img.save(img_io, format="JPEG", quality=image_quality, optimize=True)
+                         img_io.seek(0)
+                         new_img_bytes = img_io.read()
+@@ -53,132 +55,134 @@
+         return True, f"Compressed: {os.path.basename(input_path)}"
+     except Exception as e:
+Error:   print(f"[ERROR] Exception during compression of {input_path}: {e}")
+         return False, f"Error compressing {os.path.basename(input_path)}: {e}"
+ 
++
+ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
+     """Compress PDF to target size using Ghostscript with progressive quality reduction."""
+     print(f"\nCompressing to target size: {target_size_kb} KB")
+     print(f"Original file: {input_path}")
+-    
++
+     # Get original size
+     original_size = os.path.getsize(input_path) / 1024  # Convert to KB
+     print(f"Original size: {original_size:.2f} KB")
+-    
++
+     # Define quality steps based on target size
+     if target_size_kb > 1000:  # If target is more than 1MB
+         quality_steps = [
+-            ('high', 300),    # Start with high quality
+-            ('high', 250),    # Gradual reduction from high
+-            ('high', 200),
+-            ('high', 175),
+-            ('medium', 150),  # Then medium
+-            ('medium', 120),  # Then intermediate steps
+-            ('medium', 100),
+-            ('medium', 80),
+-            ('low', 72)       # Finally low quality
++            ("high", 300),  # Start with high quality
++            ("high", 250),  # Gradual reduction from high
++            ("high", 200),
++            ("high", 175),
++            ("medium", 150),  # Then medium
++            ("medium", 120),  # Then intermediate steps
++            ("medium", 100),
++            ("medium", 80),
++            ("low", 72),  # Finally low quality
+         ]
+     else:
+         quality_steps = [
+-            ('medium', 150),  # Start with medium quality
+-            ('medium', 120),  # Then intermediate steps
+-            ('medium', 100),
+-            ('medium', 80),
+-            ('low', 72)       # Finally low quality
++            ("medium", 150),  # Start with medium quality
++            ("medium", 120),  # Then intermediate steps
++            ("medium", 100),
++            ("medium", 80),
++            ("low", 72),  # Finally low quality
+         ]
+-    
++
+     # Try each quality step
+     for quality, dpi in quality_steps:
+         print(f"\nTrying {quality} quality ({dpi} DPI)...")
+-        temp_output = output_path.replace('.pdf', f'_{quality}_{dpi}.pdf')
++        temp_output = output_path.replace(".pdf", f"_{quality}_{dpi}.pdf")
+         ghostscript_compress(input_path, temp_output, quality, custom_dpi=dpi)
+         temp_size = os.path.getsize(temp_output) / 1024
+         print(f"Size at {dpi} DPI: {temp_size:.2f} KB")
+-        
++
+         if temp_size <= target_size_kb:
+             print(f"Target size achieved with {quality} quality ({dpi} DPI)!")
+             shutil.move(temp_output, output_path)
+             return True
+-        
++
+         # Clean up intermediate file
+         try:
+             os.remove(temp_output)
+         except:
+             pass
+-    
++
+     # If quality steps didn't work, try image quality reduction
+     print("\nAttempting image quality reduction...")
+     quality = 85
+     while quality >= 30:
+         print(f"\nTrying with image quality: {quality}%")
+-        temp_output = output_path.replace('.pdf', f'_q{quality}.pdf')
+-        ghostscript_compress(input_path, temp_output, 'low', image_quality=quality)
++        temp_output = output_path.replace(".pdf", f"_q{quality}.pdf")
++        ghostscript_compress(input_path, temp_output, "low", image_quality=quality)
+         temp_size = os.path.getsize(temp_output) / 1024
+         print(f"Size at {quality}% quality: {temp_size:.2f} KB")
+-        
++
+         if temp_size <= target_size_kb:
+             print(f"Target size achieved with {quality}% image quality!")
+             shutil.move(temp_output, output_path)
+             return True
+-        
++
+         # Clean up intermediate file
+         try:
+             os.remove(temp_output)
+         except:
+             pass
+-        
++
+         # Reduce quality more aggressively if we're still far from target
+         if temp_size > target_size_kb * 1.5:
+             quality -= 15
+         else:
+             quality -= 5
+-    
++
+     # If we still haven't achieved the target size, use the smallest result
+     print("\nCould not achieve target size. Using best available compression...")
+     sizes = {}
+-    
++
+     # Try one final time with each quality level to get the smallest possible size
+     for quality, dpi in quality_steps:
+-        temp_output = output_path.replace('.pdf', f'_{quality}_{dpi}.pdf')
++        temp_output = output_path.replace(".pdf", f"_{quality}_{dpi}.pdf")
+         try:
+             ghostscript_compress(input_path, temp_output, quality, custom_dpi=dpi)
+             temp_size = os.path.getsize(temp_output) / 1024
+             sizes[f"{quality}_{dpi}"] = (temp_output, temp_size)
+         except:
+             pass
+-    
++
+     # Add low quality with image compression as last resort
+-    temp_output = output_path.replace('.pdf', '_q30.pdf')
++    temp_output = output_path.replace(".pdf", "_q30.pdf")
+     try:
+-        ghostscript_compress(input_path, temp_output, 'low', image_quality=30)
++        ghostscript_compress(input_path, temp_output, "low", image_quality=30)
+         temp_size = os.path.getsize(temp_output) / 1024
+-        sizes['low_q30'] = (temp_output, temp_size)
++        sizes["low_q30"] = (temp_output, temp_size)
+     except:
+         pass
+-    
++
+     if not sizes:
+         return False
+-    
++
+     # Clean up all temporary files except the smallest one
+     best_quality = min(sizes.items(), key=lambda x: x[1][1])
+     for quality, (path, _) in sizes.items():
+         if path != best_quality[1][0]:
+             try:
+                 os.remove(path)
+             except:
+                 pass
+-    
++
+     shutil.move(best_quality[1][0], output_path)
+     print(f"Final size: {best_quality[1][1]:.2f} KB")
+     return False
+ 
++
+ def get_bundled_ghostscript_path():
+     """Get the path to the bundled Ghostscript executable."""
+-    if getattr(sys, 'frozen', False):
++    if getattr(sys, "frozen", False):
+         # Running as compiled executable
+         # PyInstaller creates a temp folder and stores path in _MEIPASS
+-        if hasattr(sys, '_MEIPASS'):
++        if hasattr(sys, "_MEIPASS"):
+             # One-file mode: files are extracted to a temporary directory
+             base_path = sys._MEIPASS
+             print(f"[DEBUG] Running as frozen executable (one-file), temp path: {base_path}")
+         else:
+             # One-directory mode: files are in the same directory as the executable
+@@ -186,167 +190,175 @@
+             print(f"[DEBUG] Running as frozen executable (one-dir), base path: {base_path}")
+     else:
+         # Running as script
+         base_path = os.path.dirname(os.path.abspath(__file__))
+         print(f"[DEBUG] Running as script, base path: {base_path}")
+-    
++
+     print(f"[DEBUG] Base path: {base_path}")
+-    
++
+     # Check in platform-specific Ghostscript directory
+-    if os.name == 'nt':
++    if os.name == "nt":
+         # Windows version
+-        gs_dir = os.path.join(base_path, 'bin', 'Ghostscript', 'Windows')
++        gs_dir = os.path.join(base_path, "bin", "Ghostscript", "Windows")
+         print(f"[DEBUG] Looking for Ghostscript in: {gs_dir}")
+         print(f"[DEBUG] Directory exists: {os.path.exists(gs_dir)}")
+-        
++
+         if os.path.exists(gs_dir):
+             print(f"[DEBUG] Directory contents: {os.listdir(gs_dir)}")
+         else:
+             # If not found, list what's actually in the base path
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/compressor.py
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/convert_tab.py
+-            print(f"[DEBUG] Base path contents: {os.listdir(base_path) if os.path.exists(base_path) else 'Base path does not exist'}")
+-        
++            print(
++                f"[DEBUG] Base path contents: {os.listdir(base_path) if os.path.exists(base_path) else 'Base path does not exist'}"
++            )
++
+         # Try 64-bit, then 32-bit
+-        gs_exe = os.path.join(gs_dir, 'gswin64c.exe')
++        gs_exe = os.path.join(gs_dir, "gswin64c.exe")
+         print(f"[DEBUG] Checking for 64-bit version: {gs_exe}")
+         print(f"[DEBUG] 64-bit exists: {os.path.exists(gs_exe)}")
+-        
++
+         if not os.path.exists(gs_exe):
+             print(f"[DEBUG] 64-bit version not found, checking 32-bit")
+-            gs_exe = os.path.join(gs_dir, 'gswin32c.exe')
++            gs_exe = os.path.join(gs_dir, "gswin32c.exe")
+             print(f"[DEBUG] Checking for 32-bit version: {gs_exe}")
+             print(f"[DEBUG] 32-bit exists: {os.path.exists(gs_exe)}")
+     else:
+         # Linux version
+-        gs_dir = os.path.join(base_path, 'bin', 'Ghostscript', 'Linux')
++        gs_dir = os.path.join(base_path, "bin", "Ghostscript", "Linux")
+         print(f"[DEBUG] Looking for Ghostscript in: {gs_dir}")
+         print(f"[DEBUG] Directory exists: {os.path.exists(gs_dir)}")
+-        
++
+         if os.path.exists(gs_dir):
+             print(f"[DEBUG] Directory contents: {os.listdir(gs_dir)}")
+         else:
+             # If not found, list what's actually in the base path
+-            print(f"[DEBUG] Base path contents: {os.listdir(base_path) if os.path.exists(base_path) else 'Base path does not exist'}")
+-            
+-        gs_exe = os.path.join(gs_dir, 'gs')
++            print(
++                f"[DEBUG] Base path contents: {os.listdir(base_path) if os.path.exists(base_path) else 'Base path does not exist'}"
++            )
++
++        gs_exe = os.path.join(gs_dir, "gs")
+         print(f"[DEBUG] Checking for Linux version: {gs_exe}")
+         print(f"[DEBUG] Linux version exists: {os.path.exists(gs_exe)}")
+-    
++
+     if os.path.exists(gs_exe):
+         print(f"[DEBUG] Found Ghostscript at: {gs_exe}")
+         # Check if it's executable
+         if os.access(gs_exe, os.X_OK):
+             print(f"[DEBUG] Ghostscript is executable")
+         else:
+             print(f"[DEBUG] Warning: Ghostscript exists but is not executable")
+     else:
+         print(f"[DEBUG] Ghostscript not found at: {gs_exe}")
+-    
++
+     return gs_exe if os.path.exists(gs_exe) else None
++
+ 
+ def is_ghostscript_available():
+     """Check if Ghostscript is available in the bin directory."""
+     return get_bundled_ghostscript_path() is not None
++
+ 
+ def get_ghostscript_cmd():
+     """Get the Ghostscript command to use from bin directory."""
+     gs_path = get_bundled_ghostscript_path()
+     if gs_path:
+         return gs_path
+-    
++
+     # Fallback to system PATH if not found in bin
+-    if os.name == 'nt':
+-        return shutil.which('gswin64c') or shutil.which('gswin32c') or 'gswin64c'
+-    else:
+-        return shutil.which('gs') or 'gs'
+-
+-def ghostscript_compress(input_path, output_path, quality='medium', image_quality=None, custom_dpi=None):
++    if os.name == "nt":
++        return shutil.which("gswin64c") or shutil.which("gswin32c") or "gswin64c"
++    else:
++        return shutil.which("gs") or "gs"
++
++
++def ghostscript_compress(input_path, output_path, quality="medium", image_quality=None, custom_dpi=None):
+     """Compress PDF using Ghostscript with specified quality settings."""
+     if not is_ghostscript_available():
+         raise Exception("Ghostscript is not available. Please install it first.")
+-    
++
+     # Define quality settings
+-    quality_settings = {
+-        'low': ('/screen', 72),
+-        'medium': ('/ebook', 150),
+-        'high': ('/printer', 300)
+-    }
+-    
++    quality_settings = {"low": ("/screen", 72), "medium": ("/ebook", 150), "high": ("/printer", 300)}
++
+     # Get base settings
+     gs_setting, base_dpi = quality_settings[quality]
+-    
++
+     # Use custom DPI if provided
+     dpi = custom_dpi if custom_dpi is not None else base_dpi
+-    
++
+     # Build Ghostscript command
+     gs_cmd = get_ghostscript_cmd()
+     cmd = [
+         gs_cmd,
+-        '-sDEVICE=pdfwrite',
+-        f'-dPDFSETTINGS={gs_setting}',
+-        '-dNOPAUSE',
+-        '-dQUIET',
+-        '-dBATCH',
+-        f'-dColorImageResolution={dpi}',
+-        f'-dGrayImageResolution={dpi}',
+-        f'-dMonoImageResolution={dpi}'
++        "-sDEVICE=pdfwrite",
++        f"-dPDFSETTINGS={gs_setting}",
++        "-dNOPAUSE",
++        "-dQUIET",
++        "-dBATCH",
++        f"-dColorImageResolution={dpi}",
++        f"-dGrayImageResolution={dpi}",
++        f"-dMonoImageResolution={dpi}",
+     ]
+-    
++
+     # Add image quality settings if specified
+     if image_quality is not None:
+-        cmd.extend([
+-            f'-dJPEGQ={image_quality}',
+-            '-dAutoFilterColorImages=false',
+-            '-dAutoFilterGrayImages=false',
+-            '-dColorImageDownsampleType=/Bicubic',
+-            '-dGrayImageDownsampleType=/Bicubic'
+-        ])
+-    
+-    cmd.extend(['-sOutputFile=' + output_path, input_path])
+-    
++        cmd.extend(
++            [
++                f"-dJPEGQ={image_quality}",
++                "-dAutoFilterColorImages=false",
++                "-dAutoFilterGrayImages=false",
++                "-dColorImageDownsampleType=/Bicubic",
++                "-dGrayImageDownsampleType=/Bicubic",
++            ]
++        )
++
++    cmd.extend(["-sOutputFile=" + output_path, input_path])
++
+     # Execute command
+     subprocess.run(cmd, check=True, capture_output=True)
+ 
+-def compress_multiple_pdfs(pdf_files, output_directory, compression_mode="medium", target_size_kb=None, progress_callback=None, status_callback=None):
++
++def compress_multiple_pdfs(
++    pdf_files, output_directory, compression_mode="medium", target_size_kb=None, progress_callback=None, status_callback=None
++):
+     """
+     Compress multiple PDFs using Ghostscript. compression_mode: 'low', 'medium', 'high'.
+     target_size_kb: if set, will compress to target size using image quality adjustment.
+     Output files are named with _compressed before .pdf, and numbered if needed.
+     """
+     print(f"[DEBUG] compress_multiple_pdfs called with {len(pdf_files)} files. Output dir: {output_directory}")
+     print(f"[DEBUG] Compression mode: {compression_mode}, Target size: {target_size_kb} KB")
+-    
++
+     if not is_ghostscript_available():
+         msg = "Ghostscript is not installed or not in PATH. Please install Ghostscript."
+Error:   print(f"[ERROR] {msg}")
+         if status_callback:
+             status_callback(msg)
+         return [], [msg]
+-    
++
+     if not os.path.exists(output_directory):
+         os.makedirs(output_directory)
+         print(f"[DEBUG] Created output directory: {output_directory}")
+-    
++
+     total = len(pdf_files)
+     successes, failures = [], []
+-    
++
+     for idx, pdf in enumerate(pdf_files):
+         base = os.path.basename(pdf)
+         name, ext = os.path.splitext(base)
+         out_base = f"{name}_compressed{ext}"
+         out_path = os.path.join(output_directory, out_base)
+-        
++
+         # Ensure unique file name
+         counter = 1
+         while os.path.exists(out_path):
+             out_base = f"{name}_compressed({counter}){ext}"
+             out_path = os.path.join(output_directory, out_base)
+             counter += 1
+-        
++
+         print(f"[DEBUG] Compressing {pdf} -> {out_path}")
+         if status_callback:
+             status_callback(f"Compressing {base} ({idx+1}/{total})...")
+-        
++
+         try:
+             # If target size is specified, use the target size compression function
+             if target_size_kb:
+                 print(f"[DEBUG] Using target size compression: {target_size_kb} KB")
+                 if status_callback:
+@@ -359,18 +371,18 @@
+             else:
+                 # If no target size, use specified compression mode
+                 print(f"[DEBUG] Using {compression_mode} compression (no target size)")
+                 ghostscript_compress(pdf, out_path, quality=compression_mode)
+                 successes.append(f"Compressed: {base}")
+-            
++
+             if progress_callback:
+-                progress_callback(idx+1, total)
+-                
++                progress_callback(idx + 1, total)
++
+         except Exception as e:
+             error_msg = f"Error compressing {base}: {str(e)}"
+Error:       print(f"[ERROR] {error_msg}")
+             failures.append(error_msg)
+             if status_callback:
+                 status_callback(error_msg)
+-    
++
+     print(f"[DEBUG] Compression finished. Successes: {len(successes)}, Failures: {len(failures)}")
+-    return successes, failures 
+\ No newline at end of file
++    return successes, failures
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/convert_tab.py	2025-06-21 11:46:30.040305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/convert_tab.py	2025-06-21 11:46:32.992753+00:00
+@@ -1,59 +1,64 @@
+ import os
+-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton, 
+-                             QProgressBar, QListWidgetItem, QFileDialog, QMessageBox)
++from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QListWidgetItem, QFileDialog, QMessageBox
+ from PyQt6.QtCore import Qt, pyqtSignal, QStandardPaths
+ from PyQt6.QtGui import QFont
+ 
+-from .custom_widgets import ToggleListWidget # Assuming custom_widgets.py is in the same gui directory
+-from workers import ConversionWorker # Assuming workers.py is in the parent directory
++from .custom_widgets import ToggleListWidget  # Assuming custom_widgets.py is in the same gui directory
++from workers import ConversionWorker  # Assuming workers.py is in the parent directory
++
+ 
+ class ConvertTab(QWidget):
+     # Optional: Signals to notify the main window if needed, though most logic will be internal.
+     # conversion_process_started = pyqtSignal()
+     # conversion_process_finished = pyqtSignal()
+ 
+     def __init__(self, parent=None):
+         super().__init__(parent)
+-        self.worker = None # To hold the conversion worker thread
++        self.worker = None  # To hold the conversion worker thread
+         self._setup_ui()
+ 
+     def _setup_ui(self):
+         layout = QVBoxLayout(self)
+ 
+         # Title
+-        title_label = QLabel("PDF to DOCX Converter") # Corrected from title_label
+-        title_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))
++        title_label = QLabel("PDF to DOCX Converter")  # Corrected from title_label
++        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+         # Styles for title, warning, etc. are kept from previous version
+-        title_label.setStyleSheet("""
++        title_label.setStyleSheet(
++            """
+             color: #000000;
+             background-color: #f0f0f0;
+             padding: 22px 0 16px 0;
+             border-bottom: 1.5px solid #cccccc;
+             border-radius: 8px 8px 0 0;
+-        """)
++        """
++        )
+         layout.addWidget(title_label)
+ 
+         # Warning
+         warning_label = QLabel("Note: Image and graphic elements in PDFs may be lost or altered during conversion.")
+         warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+-        warning_label.setStyleSheet("""
++        warning_label.setStyleSheet(
++            """
+             color: #505050;
+             background: #fffbe7; /* Cream color for highlight */
+             border: 1px solid #ffe0b2;
+             border-radius: 6px;
+             padding: 8px 0 8px 0;
+             font-size: 14px;
+             margin-bottom: 10px;
+-        """)
++        """
++        )
+         layout.addWidget(warning_label)
+ 
+         # File list using ToggleListWidget
+-        self.file_list_widget = ToggleListWidget() # Renamed from file_list for clarity
++        self.file_list_widget = ToggleListWidget()  # Renamed from file_list for clarity
+         self.file_list_widget.setSelectionMode(ToggleListWidget.SelectionMode.ExtendedSelection)
+-        self.file_list_widget.setStyleSheet("""
++        self.file_list_widget.setStyleSheet(
++            """
+             QListWidget {
+                 background-color: #ffffff;
+                 color: #222222;
+                 border: 1.5px solid #a0a0a0;
+                 border-radius: 4px;
+@@ -65,11 +70,12 @@
+             }
+             QListWidget::item:selected {
+                 background: #b7d6fb;
+                 color: #222222;
+             }
+-        """)
++        """
++        )
+         self.file_list_widget.itemSelectionChanged.connect(self._update_button_states)
+         layout.addWidget(self.file_list_widget)
+ 
+         # Remove Selected button
+         self.remove_button = QPushButton("Remove Selected")
+@@ -95,16 +101,17 @@
+         # Status label
+         self.status_label = QLabel("Select PDF files to begin.")
+         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+         layout.addWidget(self.status_label)
+ 
+-        self.setLayout(layout) # Set the layout for the QWidget
++        self.setLayout(layout)  # Set the layout for the QWidget
+         self._apply_general_styles()
+ 
+     def _apply_general_styles(self):
+         # Styles for tab, buttons, progress bar, general labels are kept from previous version
+-        self.setStyleSheet("""
++        self.setStyleSheet(
++            """
+             ConvertTab { /* Target the widget itself for background */
+                  background-color: #f3f4f6; /* Soft gray */
+             }
+             QPushButton {
+                 background-color: #808080;
+@@ -142,35 +149,37 @@
+                 border-radius: 5px;
+             }
+             QLabel {
+                 color: #000000; /* Default for labels not specifically styled */
+             }
+-        """)
++        """
++        )
+ 
+     def _select_files(self):
+         files, _ = QFileDialog.getOpenFileNames(
+             self,
+             "Select PDF Files",
+             QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
+-            "PDF Files (*.pdf)"
++            "PDF Files (*.pdf)",
+         )
+         if files:
+             self.file_list_widget.clear()
+             for f_path in files:
+                 item = QListWidgetItem(f_path)
+-                item.setToolTip(f_path) # Show full path on hover
++                item.setToolTip(f_path)  # Show full path on hover
+                 self.file_list_widget.addItem(item)
+             self.status_label.setText(f"{len(files)} file(s) selected. Ready to convert.")
+             self.status_label.setStyleSheet("color: black;")
+         self._update_button_states()
+ 
+     def _remove_selected_files(self):
+         selected_items = self.file_list_widget.selectedItems()
+-        if not selected_items: return
++        if not selected_items:
++            return
+         for item in selected_items:
+             self.file_list_widget.takeItem(self.file_list_widget.row(item))
+-        
++
+         if self.file_list_widget.count() == 0:
+             self.status_label.setText("No files selected.")
+         else:
+             self.status_label.setText(f"{self.file_list_widget.count()} file(s) remaining.")
+         self.status_label.setStyleSheet("color: black;")
+@@ -201,26 +210,26 @@
+         self.status_label.setText("Initializing conversion...")
+         self.status_label.setStyleSheet("color: black;")
+         # if self.conversion_process_started:
+         #     self.conversion_process_started.emit()
+ 
+-        self.worker = ConversionWorker(pdf_files, output_directory, self) # Pass self as parent
++        self.worker = ConversionWorker(pdf_files, output_directory, self)  # Pass self as parent
+         self.worker.progress.connect(self._update_progress_bar)
+         self.worker.status_update.connect(self._update_status_label)
+         self.worker.finished.connect(self._handle_conversion_finished)
+         self.worker.error.connect(self._handle_conversion_error)
+         self.worker.start()
+-        self._update_button_states() # Disable buttons while worker is running
++        self._update_button_states()  # Disable buttons while worker is running
+ 
+     def _update_progress_bar(self, value):
+         self.progress_bar.setValue(value)
+ 
+     def _update_status_label(self, message):
+         self.status_label.setText(message)
+         if "Error" in message or "Failed" in message:
+             self.status_label.setStyleSheet("color: red;")
+-        elif "Successfully" in message or "Created output directory" in message : # also color green for directory creation
++        elif "Successfully" in message or "Created output directory" in message:  # also color green for directory creation
+             self.status_label.setStyleSheet("color: green;")
+         else:
+             self.status_label.setStyleSheet("color: black;")
+ 
+     def _handle_conversion_finished(self, successful_messages, failed_messages):
+@@ -230,45 +239,47 @@
+ 
+         if num_failed == 0 and num_success > 0:
+             final_message = f"All {num_success} files converted successfully to: {self.worker.output_directory}"
+             self.status_label.setStyleSheet("color: green;")
+         elif num_success > 0 and num_failed > 0:
+-            final_message = f"Partial success: {num_success} succeeded, {num_failed} failed. Check: {self.worker.output_directory}"
++            final_message = (
++                f"Partial success: {num_success} succeeded, {num_failed} failed. Check: {self.worker.output_directory}"
++            )
+             self.status_label.setStyleSheet("color: orange;")
+         elif num_failed > 0 and num_success == 0:
+             final_message = f"All {num_failed} conversions failed."
+             # If output directory creation failed, it might be in failed_messages[0]
+             if "Failed to create output directory" in failed_messages[0]:
+-                 final_message = failed_messages[0] # Show the more specific error from worker
++                final_message = failed_messages[0]  # Show the more specific error from worker
+             self.status_label.setStyleSheet("color: red;")
+-        elif num_success == 0 and num_failed == 0 and self.worker and self.worker.pdf_files: 
++        elif num_success == 0 and num_failed == 0 and self.worker and self.worker.pdf_files:
+             final_message = "Conversion process completed, but no files were processed or an issue occurred."
+             self.status_label.setStyleSheet("color: orange;")
+-        else: # No files were selected initially, or worker didn't run
++        else:  # No files were selected initially, or worker didn't run
+             final_message = "Conversion process finished or was not started."
+             self.status_label.setStyleSheet("color: black;")
+-            
++
+         self.status_label.setText(final_message)
+         QMessageBox.information(self, "Conversion Complete", final_message)
+ 
+-        self.worker = None # Clear the worker
+-        self._update_button_states() # Re-enable buttons
++        self.worker = None  # Clear the worker
++        self._update_button_states()  # Re-enable buttons
+         # if self.conversion_process_finished:
+         #     self.conversion_process_finished.emit()
+ 
+     def _handle_conversion_error(self, error_message):
+         self.status_label.setText(f"Critical Error: {error_message}")
+         self.status_label.setStyleSheet("color: red;")
+         self.progress_bar.setVisible(False)
+         QMessageBox.critical(self, "Conversion Error", error_message)
+-        self.worker = None # Clear the worker
+-        self._update_button_states() # Re-enable buttons
++        self.worker = None  # Clear the worker
++        self._update_button_states()  # Re-enable buttons
+ 
+     def stop_active_conversion(self):
+         if self.worker and self.worker.isRunning():
+-            self.worker.stop() # Tell the worker to stop
++            self.worker.stop()  # Tell the worker to stop
+             # Optionally wait a bit for it to finish, or rely on signals
+             self.status_label.setText("Conversion cancelled by user.")
+             self.status_label.setStyleSheet("color: orange;")
+-            self.progress_bar.setVisible(False) # Or set to 0
++            self.progress_bar.setVisible(False)  # Or set to 0
+             self.worker = None
+-            self._update_button_states() 
+\ No newline at end of file
++            self._update_button_states()
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/merge_tab.py	2025-06-21 11:46:30.041305+00:00
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/merge_tab.py
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/merge_tab.py	2025-06-21 11:46:33.080780+00:00
+@@ -1,13 +1,24 @@
+ from PyQt6.QtWidgets import (
+-    QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QListWidget, QListWidgetItem,
+-    QHBoxLayout, QFileDialog, QMessageBox, QGroupBox, QMenu
++    QWidget,
++    QVBoxLayout,
++    QLabel,
++    QPushButton,
++    QProgressBar,
++    QListWidget,
++    QListWidgetItem,
++    QHBoxLayout,
++    QFileDialog,
++    QMessageBox,
++    QGroupBox,
++    QMenu,
+ )
+ from PyQt6.QtCore import Qt, QStandardPaths, QMimeData
+ from PyQt6.QtGui import QFont, QAction, QDrag
+ from workers import MergeWorker
+ import os
++
+ 
+ class DragDropListWidget(QListWidget):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+@@ -34,18 +45,19 @@
+ 
+     def dropEvent(self, event):
+         if event.mimeData().hasText():
+             source = self.currentRow()
+             target = self.row(self.itemAt(event.position().toPoint()))
+-            
++
+             if source < target:
+                 target += 1
+-            
++
+             item = self.takeItem(source)
+             self.insertItem(target, item)
+             self.setCurrentItem(item)
+             event.acceptProposedAction()
++
+ 
+ class MergeTab(QWidget):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.worker = None
+@@ -54,27 +66,30 @@
+     def _setup_ui(self):
+         layout = QVBoxLayout(self)
+ 
+         # Title
+         title_label = QLabel("PDF Merge")
+-        title_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))
++        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+-        title_label.setStyleSheet("""
++        title_label.setStyleSheet(
++            """
+             color: #000000;
+             background-color: #f0f0f0;
+             padding: 22px 0 16px 0;
+             border-bottom: 1.5px solid #cccccc;
+             border-radius: 8px 8px 0 0;
+-        """)
++        """
++        )
+         layout.addWidget(title_label)
+ 
+         # File list
+         self.file_list = DragDropListWidget()
+         self.file_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
+         self.file_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+         self.file_list.customContextMenuRequested.connect(self._show_context_menu)
+-        self.file_list.setStyleSheet("""
++        self.file_list.setStyleSheet(
++            """
+             QListWidget {
+                 background-color: #ffffff;
+                 color: #222222;
+                 border: 1.5px solid #a0a0a0;
+                 border-radius: 4px;
+@@ -86,11 +101,12 @@
+             }
+             QListWidget::item:selected {
+                 background: #b7d6fb;
+                 color: #222222;
+             }
+-        """)
++        """
++        )
+         layout.addWidget(self.file_list)
+ 
+         # File selection buttons
+         button_layout = QHBoxLayout()
+         self.select_button = QPushButton("Select PDF Files")
+@@ -125,11 +141,12 @@
+ 
+         self.setLayout(layout)
+         self._apply_styles()
+ 
+     def _apply_styles(self):
+-        self.setStyleSheet("""
++        self.setStyleSheet(
++            """
+             MergeTab {
+                 background-color: #f3f4f6;
+             }
+             QPushButton {
+                 background-color: #808080;
+@@ -167,11 +184,12 @@
+                 border-radius: 5px;
+             }
+             QLabel {
+                 color: #000000;
+             }
+-        """)
++        """
++        )
+ 
+     def _update_merge_button_state(self):
+         file_count = self.file_list.count()
+         self.merge_button.setEnabled(file_count >= 2)
+         self.remove_button.setEnabled(file_count > 0)
+@@ -204,11 +222,11 @@
+     def _select_files(self):
+         files, _ = QFileDialog.getOpenFileNames(
+             self,
+             "Select PDF Files",
+             QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
+-            "PDF Files (*.pdf)"
++            "PDF Files (*.pdf)",
+         )
+         if files:
+             for f in files:
+                 item = QListWidgetItem(f)
+                 item.setToolTip(f)
+@@ -282,6 +300,6 @@
+         self.status_label.setText(f"Critical Error: {error_message}")
+         self.status_label.setStyleSheet("color: red;")
+         self.progress_bar.setVisible(False)
+         self.worker = None
+         self.merge_button.setEnabled(True)
+-        self.select_button.setEnabled(True) 
+\ No newline at end of file
++        self.select_button.setEnabled(True)
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs/convert_to_image_tab.py	2025-06-21 11:46:30.041305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs/convert_to_image_tab.py	2025-06-21 11:46:33.107800+00:00
+@@ -1,141 +1,145 @@
+ from PyQt6.QtWidgets import (
+-    QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, 
+-    QPushButton, QListWidget, QComboBox, QProgressBar, QFileDialog
++    QWidget,
++    QVBoxLayout,
++    QHBoxLayout,
++    QGroupBox,
++    QLabel,
++    QPushButton,
++    QListWidget,
++    QComboBox,
++    QProgressBar,
++    QFileDialog,
+ )
+ from workers import ConvertToImageWorker
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs/convert_to_image_tab.py
++
+ 
+ class ConvertToImageTab(QWidget):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.init_ui()
+         self.worker = None
+         self.output_directory = None
+ 
+     def init_ui(self):
+         layout = QVBoxLayout()
+-        
++
+         # File selection
+         file_group = QGroupBox("PDF Files")
+         file_layout = QVBoxLayout()
+-        
++
+         self.file_list = QListWidget()
+         self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
+         file_layout.addWidget(self.file_list)
+-        
++
+         file_buttons = QHBoxLayout()
+         self.add_file_btn = QPushButton("Add Files")
+         self.add_file_btn.clicked.connect(self.add_files)
+         self.remove_file_btn = QPushButton("Remove Selected")
+         self.remove_file_btn.clicked.connect(self.remove_files)
+         self.clear_files_btn = QPushButton("Clear All")
+         self.clear_files_btn.clicked.connect(self.clear_files)
+-        
++
+         file_buttons.addWidget(self.add_file_btn)
+         file_buttons.addWidget(self.remove_file_btn)
+         file_buttons.addWidget(self.clear_files_btn)
+         file_layout.addLayout(file_buttons)
+         file_group.setLayout(file_layout)
+-        
++
+         # Image options
+         options_group = QGroupBox("Image Options")
+         options_layout = QVBoxLayout()
+-        
++
+         # Format selection and DPI in a single row
+         format_dpi_layout = QHBoxLayout()
+-        
++
+         # Image Format
+         format_layout = QHBoxLayout()
+         format_layout.addWidget(QLabel("Image Format:"))
+         self.format_combo = QComboBox()
+         self.format_combo.addItems(["PNG", "JPEG"])
+         format_layout.addWidget(self.format_combo)
+         format_dpi_layout.addLayout(format_layout)
+-        
++
+         # Add some space between format and DPI
+         format_dpi_layout.addSpacing(20)
+-        
++
+         # DPI settings
+         dpi_layout = QHBoxLayout()
+         dpi_layout.addWidget(QLabel("DPI:"))
+         self.dpi_combo = QComboBox()
+         self.dpi_combo.addItems(["72", "100", "150", "300", "600"])
+         self.dpi_combo.setCurrentText("100")
+         dpi_layout.addWidget(self.dpi_combo)
+         format_dpi_layout.addLayout(dpi_layout)
+-        
++
+         options_layout.addLayout(format_dpi_layout)
+-        
++
+         # Image Result Type and Color Type in a single row
+         result_color_layout = QHBoxLayout()
+-        
++
+         # Image Result Type
+         result_type_layout = QHBoxLayout()
+         result_type_layout.addWidget(QLabel("Image Result Type:"))
+         self.result_type_combo = QComboBox()
+         self.result_type_combo.addItems(["Multiple Images", "Single Big Image"])
+         result_type_layout.addWidget(self.result_type_combo)
+         result_color_layout.addLayout(result_type_layout)
+-        
++
+         # Add some space between result type and color type
+         result_color_layout.addSpacing(20)
+-        
++
+         # Color Type
+         color_type_layout = QHBoxLayout()
+         color_type_layout.addWidget(QLabel("Color Type:"))
+         self.color_type_combo = QComboBox()
+         self.color_type_combo.addItems(["Color", "Gray Scale"])
+         color_type_layout.addWidget(self.color_type_combo)
+         result_color_layout.addLayout(color_type_layout)
+-        
++
+         options_layout.addLayout(result_color_layout)
+-        
++
+         options_group.setLayout(options_layout)
+-        
++
+         # Output directory
+         dir_group = QGroupBox("Output Directory")
+         dir_layout = QHBoxLayout()
+         self.dir_label = QLabel("No directory selected")
+         self.dir_label.setStyleSheet("color: #666;")
+         self.select_dir_btn = QPushButton("Select Directory")
+         self.select_dir_btn.clicked.connect(self.select_directory)
+         dir_layout.addWidget(self.dir_label)
+         dir_layout.addWidget(self.select_dir_btn)
+         dir_group.setLayout(dir_layout)
+-        
++
+         # Progress
+         progress_group = QGroupBox("Progress")
+         progress_layout = QVBoxLayout()
+         self.progress_bar = QProgressBar()
+         self.progress_bar.setTextVisible(True)
+         self.status_label = QLabel("Ready")
+         self.status_label.setStyleSheet("color: #666;")
+         progress_layout.addWidget(self.progress_bar)
+         progress_layout.addWidget(self.status_label)
+         progress_group.setLayout(progress_layout)
+-        
++
+         # Convert button
+         self.convert_btn = QPushButton("Convert to Image")
+         self.convert_btn.clicked.connect(self.start_conversion)
+         self.convert_btn.setEnabled(False)
+-        
++
+         # Add all groups to main layout
+         layout.addWidget(file_group)
+         layout.addWidget(options_group)
+         layout.addWidget(dir_group)
+         layout.addWidget(progress_group)
+         layout.addWidget(self.convert_btn)
+-        
++
+         self.setLayout(layout)
+ 
+     def add_files(self):
+-        files, _ = QFileDialog.getOpenFileNames(
+-            self,
+-            "Select PDF Files",
+-            "",
+-            "PDF Files (*.pdf)"
+-        )
++        files, _ = QFileDialog.getOpenFileNames(self, "Select PDF Files", "", "PDF Files (*.pdf)")
+         if files:
+             self.file_list.addItems(files)
+             self.update_convert_button()
+ 
+     def remove_files(self):
+@@ -146,63 +150,46 @@
+     def clear_files(self):
+         self.file_list.clear()
+         self.update_convert_button()
+ 
+     def select_directory(self):
+-        directory = QFileDialog.getExistingDirectory(
+-            self,
+-            "Select Output Directory",
+-            ""
+-        )
++        directory = QFileDialog.getExistingDirectory(self, "Select Output Directory", "")
+         if directory:
+             self.output_directory = directory
+             self.dir_label.setText(directory)
+             self.update_convert_button()
+ 
+     def update_convert_button(self):
+-        self.convert_btn.setEnabled(
+-            self.file_list.count() > 0 and
+-            self.output_directory is not None
+-        )
++        self.convert_btn.setEnabled(self.file_list.count() > 0 and self.output_directory is not None)
+ 
+     def start_conversion(self):
+         if not self.file_list.count() or not self.output_directory:
+             return
+ 
+         # Get selected files
+-        pdf_files = [
+-            self.file_list.item(i).text()
+-            for i in range(self.file_list.count())
+-        ]
++        pdf_files = [self.file_list.item(i).text() for i in range(self.file_list.count())]
+ 
+         # Get conversion options
+         image_format = self.format_combo.currentText().lower()
+         dpi = int(self.dpi_combo.currentText())
+         result_type = self.result_type_combo.currentText()
+         color_type = self.color_type_combo.currentText()
+ 
+         # Create and start worker
+-        self.worker = ConvertToImageWorker(
+-            pdf_files,
+-            self.output_directory,
+-            image_format,
+-            dpi,
+-            result_type,
+-            color_type
+-        )
+-        
++        self.worker = ConvertToImageWorker(pdf_files, self.output_directory, image_format, dpi, result_type, color_type)
++
+         # Connect signals
+         self.worker.progress.connect(self.progress_bar.setValue)
+         self.worker.status_update.connect(self.status_label.setText)
+         self.worker.finished.connect(self.on_conversion_finished)
+         self.worker.error.connect(self.on_error)
+-        
++
+         # Update UI
+         self.convert_btn.setEnabled(False)
+         self.progress_bar.setValue(0)
+         self.status_label.setText("Starting conversion...")
+-        
++
+         # Start worker
+         self.worker.start()
+ 
+     def on_conversion_finished(self, success):
+         self.convert_btn.setEnabled(True)
+@@ -210,6 +197,6 @@
+             self.status_label.setText("Conversion completed successfully!")
+         else:
+             self.status_label.setText("Conversion completed with errors. Check the status messages above.")
+ 
+     def on_error(self, message):
+-        self.status_label.setText(f"Error: {message}") 
+\ No newline at end of file
++        self.status_label.setText(f"Error: {message}")
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs/extract_text_tab.py
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs/extract_text_tab.py	2025-06-21 11:46:30.041305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs/extract_text_tab.py	2025-06-21 11:46:33.109645+00:00
+@@ -1,123 +1,127 @@
+ from PyQt6.QtWidgets import (
+-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+-    QLabel, QProgressBar, QFileDialog, QListWidget,
+-    QGroupBox, QComboBox, QLineEdit
++    QWidget,
++    QVBoxLayout,
++    QHBoxLayout,
++    QPushButton,
++    QLabel,
++    QProgressBar,
++    QFileDialog,
++    QListWidget,
++    QGroupBox,
++    QComboBox,
++    QLineEdit,
+ )
+ from PyQt6.QtCore import Qt
+ from workers import ExtractTextWorker
++
+ 
+ class ExtractTextTab(QWidget):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.init_ui()
+         self.worker = None
+         self.output_directory = None
+ 
+     def init_ui(self):
+         layout = QVBoxLayout()
+-        
++
+         # File selection
+         file_group = QGroupBox("PDF Files")
+         file_layout = QVBoxLayout()
+-        
++
+         self.file_list = QListWidget()
+         self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
+         file_layout.addWidget(self.file_list)
+-        
++
+         file_buttons = QHBoxLayout()
+         self.add_file_btn = QPushButton("Add Files")
+         self.add_file_btn.clicked.connect(self.add_files)
+         self.remove_file_btn = QPushButton("Remove Selected")
+         self.remove_file_btn.clicked.connect(self.remove_files)
+         self.clear_files_btn = QPushButton("Clear All")
+         self.clear_files_btn.clicked.connect(self.clear_files)
+-        
++
+         file_buttons.addWidget(self.add_file_btn)
+         file_buttons.addWidget(self.remove_file_btn)
+         file_buttons.addWidget(self.clear_files_btn)
+         file_layout.addLayout(file_buttons)
+         file_group.setLayout(file_layout)
+-        
++
+         # Extraction options
+         options_group = QGroupBox("Extraction Options")
+         options_layout = QVBoxLayout()
+-        
++
+         # Mode selection
+         mode_layout = QHBoxLayout()
+         mode_layout.addWidget(QLabel("Extraction Mode:"))
+         self.mode_combo = QComboBox()
+         self.mode_combo.addItems(["All Pages", "Selected Pages", "Page Range"])
+         self.mode_combo.currentIndexChanged.connect(self.on_mode_changed)
+         mode_layout.addWidget(self.mode_combo)
+         options_layout.addLayout(mode_layout)
+-        
++
+         # Page range input
+         range_layout = QHBoxLayout()
+         range_layout.addWidget(QLabel("Page Range:"))
+         self.page_range = QLineEdit()
+         self.page_range.setPlaceholderText("e.g., 1-3,5,7-9")
+         self.page_range.setEnabled(False)
+         range_layout.addWidget(self.page_range)
+         options_layout.addLayout(range_layout)
+-        
++
+         # Output format
+         format_layout = QHBoxLayout()
+         format_layout.addWidget(QLabel("Output Format:"))
+         self.format_combo = QComboBox()
+         self.format_combo.addItems(["Text", "Word"])
+         format_layout.addWidget(self.format_combo)
+         options_layout.addLayout(format_layout)
+-        
++
+         options_group.setLayout(options_layout)
+-        
++
+         # Output directory
+         dir_group = QGroupBox("Output Directory")
+         dir_layout = QHBoxLayout()
+         self.dir_label = QLabel("No directory selected")
+         self.dir_label.setStyleSheet("color: #666;")
+         self.select_dir_btn = QPushButton("Select Directory")
+         self.select_dir_btn.clicked.connect(self.select_directory)
+         dir_layout.addWidget(self.dir_label)
+         dir_layout.addWidget(self.select_dir_btn)
+         dir_group.setLayout(dir_layout)
+-        
++
+         # Progress
+         progress_group = QGroupBox("Progress")
+         progress_layout = QVBoxLayout()
+         self.progress_bar = QProgressBar()
+         self.progress_bar.setTextVisible(True)
+         self.status_label = QLabel("Ready")
+         self.status_label.setStyleSheet("color: #666;")
+         progress_layout.addWidget(self.progress_bar)
+         progress_layout.addWidget(self.status_label)
+         progress_group.setLayout(progress_layout)
+-        
++
+         # Extract button
+         self.extract_btn = QPushButton("Extract Text")
+         self.extract_btn.clicked.connect(self.start_extraction)
+         self.extract_btn.setEnabled(False)
+-        
++
+         # Add all groups to main layout
+         layout.addWidget(file_group)
+         layout.addWidget(options_group)
+         layout.addWidget(dir_group)
+         layout.addWidget(progress_group)
+         layout.addWidget(self.extract_btn)
+-        
++
+         self.setLayout(layout)
+ 
+     def on_mode_changed(self, index):
+         self.page_range.setEnabled(index == 2)  # Enable only for "Page Range" mode
+ 
+     def add_files(self):
+-        files, _ = QFileDialog.getOpenFileNames(
+-            self,
+-            "Select PDF Files",
+-            "",
+-            "PDF Files (*.pdf)"
+-        )
++        files, _ = QFileDialog.getOpenFileNames(self, "Select PDF Files", "", "PDF Files (*.pdf)")
+         if files:
+             self.file_list.addItems(files)
+             self.update_extract_button()
+ 
+     def remove_files(self):
+@@ -128,61 +132,45 @@
+     def clear_files(self):
+         self.file_list.clear()
+         self.update_extract_button()
+ 
+     def select_directory(self):
+-        directory = QFileDialog.getExistingDirectory(
+-            self,
+-            "Select Output Directory",
+-            ""
+-        )
++        directory = QFileDialog.getExistingDirectory(self, "Select Output Directory", "")
+         if directory:
+             self.output_directory = directory
+             self.dir_label.setText(directory)
+             self.update_extract_button()
+ 
+     def update_extract_button(self):
+-        self.extract_btn.setEnabled(
+-            self.file_list.count() > 0 and
+-            self.output_directory is not None
+-        )
++        self.extract_btn.setEnabled(self.file_list.count() > 0 and self.output_directory is not None)
+ 
+     def start_extraction(self):
+         if not self.file_list.count() or not self.output_directory:
+             return
+ 
+         # Get selected files
+-        pdf_files = [
+-            self.file_list.item(i).text()
+-            for i in range(self.file_list.count())
+-        ]
++        pdf_files = [self.file_list.item(i).text() for i in range(self.file_list.count())]
+ 
+         # Get extraction options
+         mode = self.mode_combo.currentText()
+         page_range = self.page_range.text() if mode == "Page Range" else None
+         output_format = self.format_combo.currentText().lower()
+ 
+         # Create and start worker
+-        self.worker = ExtractTextWorker(
+-            pdf_files,
+-            self.output_directory,
+-            mode,
+-            page_range,
+-            output_format
+-        )
+-        
++        self.worker = ExtractTextWorker(pdf_files, self.output_directory, mode, page_range, output_format)
++
+         # Connect signals
+         self.worker.progress.connect(self.progress_bar.setValue)
+         self.worker.status_update.connect(self.status_label.setText)
+         self.worker.finished.connect(self.on_extraction_finished)
+         self.worker.error.connect(self.on_error)
+-        
++
+         # Update UI
+         self.extract_btn.setEnabled(False)
+         self.progress_bar.setValue(0)
+         self.status_label.setText("Starting extraction...")
+-        
++
+         # Start worker
+         self.worker.start()
+ 
+     def on_extraction_finished(self, success):
+         self.extract_btn.setEnabled(True)
+@@ -190,6 +178,6 @@
+             self.status_label.setText("Extraction completed successfully!")
+         else:
+             self.status_label.setText("Extraction completed with errors. Check the status messages above.")
+ 
+     def on_error(self, message):
+-        self.status_label.setText(f"Error: {message}") 
+\ No newline at end of file
++        self.status_label.setText(f"Error: {message}")
+--- /home/runner/work/PDFUtilities/PDFUtilities/pycompressor.py	2025-06-21 11:46:30.042305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/pycompressor.py	2025-06-21 11:46:33.150057+00:00
+@@ -1,8 +1,9 @@
+ import sys
+ import os
+ import fitz  # PyMuPDF
++
+ 
+ def compress_pdf(input_path, output_path, dpi=100):
+     if not os.path.isfile(input_path):
+         print(f"❌ Error: File '{input_path}' does not exist.")
+         return
+@@ -35,17 +36,19 @@
+         print(f"✅ Compression complete. Saved as: {output_path}")
+ 
+     except Exception as e:
+         print(f"❌ Error during compression: {e}")
+ 
++
+ def main():
+     if len(sys.argv) < 3:
+         print("Usage: python compress_pdf.py input.pdf output.pdf")
+         sys.exit(1)
+ 
+     input_pdf = sys.argv[1]
+     output_pdf = sys.argv[2]
+ 
+     compress_pdf(input_pdf, output_pdf)
+ 
++
+ if __name__ == "__main__":
+     main()
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/pycompressor.py
+--- /home/runner/work/PDFUtilities/PDFUtilities/main.py	2025-06-21 11:46:30.041305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/main.py	2025-06-21 11:46:33.369941+00:00
+@@ -1,90 +1,110 @@
+ import sys
+ import os
+ from pathlib import Path
+ from PyQt6.QtWidgets import (
+-    QApplication, QMainWindow, QTabWidget, QMessageBox, QWidget, 
+-    QVBoxLayout, QHBoxLayout, QMenuBar, QMenu, QToolBar, QPushButton, 
+-    QLabel, QFileDialog, QSizePolicy, QToolButton, QFrame, QWidgetAction,
+-    QSplashScreen, QProgressBar
++    QApplication,
++    QMainWindow,
++    QTabWidget,
++    QMessageBox,
++    QWidget,
++    QVBoxLayout,
++    QHBoxLayout,
++    QMenuBar,
++    QMenu,
++    QToolBar,
++    QPushButton,
++    QLabel,
++    QFileDialog,
++    QSizePolicy,
++    QToolButton,
++    QFrame,
++    QWidgetAction,
++    QSplashScreen,
++    QProgressBar,
+ )
+ from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QFont, QColor
+ from PyQt6.QtCore import Qt, QSize, QTimer, QThread, pyqtSignal
+ from gui.tabs import ConvertTab, CompressTab, MergeTab, SplitTab, ExtractTab, ConvertToImageTab
+ from compressor import is_ghostscript_available
+ 
++
+ def get_resource_path(relative_path):
+     """Get absolute path to resource, works for dev and for PyInstaller"""
+-    if getattr(sys, 'frozen', False):
++    if getattr(sys, "frozen", False):
+         # Running as compiled executable
+         # PyInstaller creates a temp folder and stores path in _MEIPASS
+-        if hasattr(sys, '_MEIPASS'):
++        if hasattr(sys, "_MEIPASS"):
+             # One-file mode: files are extracted to a temporary directory
+             base_path = sys._MEIPASS
+         else:
+             # One-directory mode: files are in the same directory as the executable
+             base_path = os.path.dirname(sys.executable)
+     else:
+         # Running as script
+         base_path = os.path.dirname(os.path.abspath(__file__))
+-    
++
+     return os.path.join(base_path, relative_path)
++
+ 
+ class InitializationThread(QThread):
+     """Thread for handling heavy initialization tasks"""
++
+     progress_updated = pyqtSignal(str)
+     initialization_complete = pyqtSignal()
+-    
++
+     def run(self):
+         """Run initialization tasks"""
+         # Simulate initialization steps with feature-focused messages
+         self.progress_updated.emit("Loading PDF conversion engine...")
+         self.msleep(200)
+-        
++
+         self.progress_updated.emit("Initializing compression tools...")
+         self.msleep(300)
+-        
++
+         self.progress_updated.emit("Setting up merge & split functionality...")
+         self.msleep(250)
+-        
++
+         self.progress_updated.emit("Preparing text extraction tools...")
+         self.msleep(200)
+-        
++
+         self.progress_updated.emit("Ready to process your PDFs!")
+         self.msleep(100)
+-        
++
+         self.initialization_complete.emit()
++
+ 
+ class PDFConverterApp(QMainWindow):
+     def __init__(self):
+         super().__init__()
+         self.setWindowTitle("PDF Utility App")
+         self.resize(1000, 700)
+-        
++
+         # Initialize components
+         self.tabs_initialized = False
+         self._initialize_ui_components()
+-        
++
+         # Check for Ghostscript availability (non-blocking)
+         QTimer.singleShot(100, self._check_ghostscript)
+ 
+     def _initialize_ui_components(self):
+         """Initialize UI components that don't require heavy processing"""
+         self._setup_menu()
+         self._setup_toolbar()
+         self._setup_central_skeleton()
+-        
++
+     def _setup_central_skeleton(self):
+         """Setup the basic central widget structure without heavy tab initialization"""
+         central = QWidget()
+         main_layout = QVBoxLayout(central)
+ 
+         # Create tab widget
+         self.tab_widget = QTabWidget()
+         self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
+         self.tab_widget.setDocumentMode(True)
+-        self.tab_widget.setStyleSheet("""
++        self.tab_widget.setStyleSheet(
++            """
+             QTabWidget::pane {
+                 border: 1px solid #b2e0f7;
+                 background: #ffffff;
+             }
+             QTabBar::tab {
+@@ -101,30 +121,34 @@
+                 border-bottom: 1px solid #ffffff;
+             }
+             QTabBar::tab:hover {
+                 background: #b7d6fb;
+             }
+-        """)
++        """
++        )
+ 
+         # Add placeholder tabs
+         self._add_placeholder_tabs()
+ 
+         main_layout.addWidget(self.tab_widget)
+         self.setCentralWidget(central)
+ 
+         # Apply main window and central widget background
+-        self.setStyleSheet("""
++        self.setStyleSheet(
++            """
+             QMainWindow {
+                 background: #d6f0fa;
+             }
+             QWidget {
+                 background: #d6f0fa;
+             }
+-        """)
++        """
++        )
+ 
+         # Style menu bar and menu items
+-        self.menuBar().setStyleSheet("""
++        self.menuBar().setStyleSheet(
++            """
+             QMenuBar {
+                 background: #b2e0f7;
+                 color: #000;
+                 font-size: 15px;
+             }
+@@ -143,90 +167,93 @@
+             }
+             QMenu::item:selected {
+                 background: #a2d4ec;
+                 color: #000;
+             }
+-        """)
++        """
++        )
+ 
+     def _add_placeholder_tabs(self):
+         """Add placeholder tabs that will be replaced with real tabs"""
+         placeholder_tabs = [
+             ("Convert to DOCX", "gui/icons/file-text.svg"),
+             ("Compress PDF", "gui/icons/archive.svg"),
+             ("Merge PDFs", "gui/icons/layers.svg"),
+             ("Split PDF", "gui/icons/scissors.svg"),
+             ("Extract Text", "gui/icons/file-text.svg"),
+-            ("Convert to Image", "gui/icons/image.svg")
++            ("Convert to Image", "gui/icons/image.svg"),
+         ]
+-        
++
+         for title, icon_path in placeholder_tabs:
+             placeholder = QWidget()
+             placeholder_layout = QVBoxLayout(placeholder)
+-            
++
+             # Add loading label
+             loading_label = QLabel("Loading...")
+             loading_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+             loading_label.setStyleSheet("font-size: 16px; color: #666; padding: 50px;")
+             placeholder_layout.addWidget(loading_label)
+-            
++
+             self.tab_widget.addTab(placeholder, QIcon(get_resource_path(icon_path)), title)
+ 
+     def _initialize_real_tabs(self):
+         """Initialize the real tabs with all functionality"""
+         if self.tabs_initialized:
+             return
+-            
++
+         # Create real tabs
+         self.convert_tab = ConvertTab()
+         self.compress_tab = CompressTab()
+         self.merge_tab = MergeTab()
+         self.split_tab = SplitTab()
+         self.extract_tab = ExtractTab()
+         self.convert_to_image_tab = ConvertToImageTab()
+ 
+         # Replace placeholder tabs with real tabs
+         self.tab_widget.removeTab(0)  # Remove Convert to DOCX placeholder
+-        self.tab_widget.insertTab(0, self.convert_tab, QIcon(get_resource_path('gui/icons/file-text.svg')), "Convert to DOCX")
+-        
++        self.tab_widget.insertTab(0, self.convert_tab, QIcon(get_resource_path("gui/icons/file-text.svg")), "Convert to DOCX")
++
+         self.tab_widget.removeTab(1)  # Remove Compress PDF placeholder
+-        self.tab_widget.insertTab(1, self.compress_tab, QIcon(get_resource_path('gui/icons/archive.svg')), "Compress PDF")
+-        
++        self.tab_widget.insertTab(1, self.compress_tab, QIcon(get_resource_path("gui/icons/archive.svg")), "Compress PDF")
++
+         self.tab_widget.removeTab(2)  # Remove Merge PDFs placeholder
+-        self.tab_widget.insertTab(2, self.merge_tab, QIcon(get_resource_path('gui/icons/layers.svg')), "Merge PDFs")
+-        
++        self.tab_widget.insertTab(2, self.merge_tab, QIcon(get_resource_path("gui/icons/layers.svg")), "Merge PDFs")
++
+         self.tab_widget.removeTab(3)  # Remove Split PDF placeholder
+-        self.tab_widget.insertTab(3, self.split_tab, QIcon(get_resource_path('gui/icons/scissors.svg')), "Split PDF")
+-        
++        self.tab_widget.insertTab(3, self.split_tab, QIcon(get_resource_path("gui/icons/scissors.svg")), "Split PDF")
++
+         self.tab_widget.removeTab(4)  # Remove Extract Text placeholder
+-        self.tab_widget.insertTab(4, self.extract_tab, QIcon(get_resource_path('gui/icons/file-text.svg')), "Extract Text")
+-        
++        self.tab_widget.insertTab(4, self.extract_tab, QIcon(get_resource_path("gui/icons/file-text.svg")), "Extract Text")
++
+         self.tab_widget.removeTab(5)  # Remove Convert to Image placeholder
+-        self.tab_widget.insertTab(5, self.convert_to_image_tab, QIcon(get_resource_path('gui/icons/image.svg')), "Convert to Image")
++        self.tab_widget.insertTab(
++            5, self.convert_to_image_tab, QIcon(get_resource_path("gui/icons/image.svg")), "Convert to Image"
++        )
+ 
+         # Connect tab change signal
+         self.tab_widget.currentChanged.connect(self._update_start_button_text)
+-        
++
+         # Set initial button text for the default selected tab (Convert to DOCX)
+         self._update_start_button_text(0)
+ 
+         # Connect start button click for each tab
+         self.convert_tab.start_btn.clicked.connect(self._start_convert)
+         self.compress_tab.start_btn.clicked.connect(self._start_compress)
+         self.merge_tab.start_btn.clicked.connect(self._start_merge)
+         self.split_tab.start_btn.clicked.connect(self._start_split)
+         self.extract_tab.start_btn.clicked.connect(self._start_extract)
+         self.convert_to_image_tab.start_btn.clicked.connect(self._start_convert_to_image)
+-        
++
+         self.tabs_initialized = True
+ 
+     def _check_ghostscript(self):
+         """Check for Ghostscript availability (non-blocking)"""
+         if not is_ghostscript_available():
+             QMessageBox.warning(
+                 self,
+                 "Ghostscript Not Found",
+-                "Ghostscript is required for PDF compression features. Please ensure Ghostscript is installed on your system."
++                "Ghostscript is required for PDF compression features. Please ensure Ghostscript is installed on your system.",
+             )
+ 
+     def _setup_menu(self):
+         menubar = QMenuBar(self)
+         file_menu = QMenu("File", self)
+@@ -237,20 +264,22 @@
+         add_file_action = QAction("Add File", self)
+         add_file_action.setShortcut("Ctrl+O")
+         add_file_action.triggered.connect(self._add_file)
+         file_menu.addAction(add_file_action)
+ 
+-        file_menu.setStyleSheet("""
++        file_menu.setStyleSheet(
++            """
+             QMenu::item {
+                 background: #b2e0f7;
+                 color: #000000;                
+             }
+             QMenu::item:selected {
+                 background: #a2d4ec;
+                 color: #000000;
+             }
+-        """)
++        """
++        )
+ 
+         add_folder_action = QAction("Add Folder", self)
+         add_folder_action.setShortcut("Ctrl+Shift+O")
+         add_folder_action.triggered.connect(self._add_folder)
+         file_menu.addAction(add_folder_action)
+@@ -264,20 +293,22 @@
+         clear_all_action = QAction("Clear All", self)
+         clear_all_action.setShortcut("Ctrl+Shift+D")
+         clear_all_action.triggered.connect(self._clear_all)
+         edit_menu.addAction(clear_all_action)
+ 
+-        edit_menu.setStyleSheet("""
++        edit_menu.setStyleSheet(
++            """
+             QMenu::item {
+                 background: #b2e0f7;
+                 color: #000000;               
+             }
+             QMenu::item:selected {
+                 background: #a2d4ec;
+                 color: #000000;
+             }
+-        """)
++        """
++        )
+ 
+         menubar.addMenu(file_menu)
+         menubar.addMenu(edit_menu)
+         menubar.addMenu(help_menu)
+         self.setMenuBar(menubar)
+@@ -309,200 +340,222 @@
+             line.setStyleSheet("background: #a2d4ec; min-width: 2px; max-width: 2px;")
+             sep_action = QWidgetAction(toolbar)
+             sep_action.setDefaultWidget(line)
+             toolbar.addAction(sep_action)
+ 
+-        self.add_file_btn = add_toolbar_button('gui/icons/file-plus.svg', 'Add File', self._add_file)
++        self.add_file_btn = add_toolbar_button("gui/icons/file-plus.svg", "Add File", self._add_file)
+         add_separator()
+-        self.add_folder_btn = add_toolbar_button('gui/icons/folder-plus.svg', 'Add Folder', self._add_folder)
++        self.add_folder_btn = add_toolbar_button("gui/icons/folder-plus.svg", "Add Folder", self._add_folder)
+         add_separator()
+-        self.delete_btn = add_toolbar_button('gui/icons/trash-2.svg', 'Delete', self._delete_selected)
++        self.delete_btn = add_toolbar_button("gui/icons/trash-2.svg", "Delete", self._delete_selected)
+         add_separator()
+-        self.clear_btn = add_toolbar_button('gui/icons/x-circle.svg', 'Clear All', self._clear_all)
++        self.clear_btn = add_toolbar_button("gui/icons/x-circle.svg", "Clear All", self._clear_all)
+         add_separator()
+ 
+     def _update_start_button_text(self, index):
+         """Update the start button text based on the selected tab"""
+         if not self.tabs_initialized:
+             return
+-            
++
+         button_texts = {
+             0: "Convert",  # Convert to DOCX
+-            1: "Compress", # Compress PDF
+-            2: "Merge",    # Merge PDFs
+-            3: "Split",    # Split PDF
++            1: "Compress",  # Compress PDF
++            2: "Merge",  # Merge PDFs
++            3: "Split",  # Split PDF
+             4: "Extract",  # Extract Text
+-            5: "Convert"   # Convert to Image
++            5: "Convert",  # Convert to Image
+         }
+         current_tab = self.tab_widget.widget(index)
+-        if current_tab and hasattr(current_tab, 'start_btn'):
++        if current_tab and hasattr(current_tab, "start_btn"):
+             current_tab.start_btn.setText(button_texts.get(index, "Start"))
+ 
+     def _add_file(self):
+         if not self.tabs_initialized:
+             return
+         files, _ = QFileDialog.getOpenFileNames(self, "Select PDF Files", os.path.expanduser("~"), "PDF Files (*.pdf)")
+         if files:
+             current_tab = self.tab_widget.currentWidget()
+-            if hasattr(current_tab, 'add_files_to_table'):
++            if hasattr(current_tab, "add_files_to_table"):
+                 current_tab.add_files_to_table(files)
+ 
+     def _add_folder(self):
+         if not self.tabs_initialized:
+             return
+         folder = QFileDialog.getExistingDirectory(self, "Select Folder", os.path.expanduser("~"))
+         if folder:
+             current_tab = self.tab_widget.currentWidget()
+-            if hasattr(current_tab, 'add_files_to_table'):
++            if hasattr(current_tab, "add_files_to_table"):
+                 pdf_files = []
+                 for entry in os.listdir(folder):
+-                    if entry.lower().endswith('.pdf'):
++                    if entry.lower().endswith(".pdf"):
+                         file_path = os.path.join(folder, entry)
+                         pdf_files.append(file_path)
+                 if pdf_files:
+                     current_tab.add_files_to_table(pdf_files)
+ 
+     def _delete_selected(self):
+         if not self.tabs_initialized:
+             return
+         current_tab = self.tab_widget.currentWidget()
+-        if hasattr(current_tab, 'remove_selected_files'):
++        if hasattr(current_tab, "remove_selected_files"):
+             current_tab.remove_selected_files()
+ 
+     def _clear_all(self):
+         if not self.tabs_initialized:
+             return
+         current_tab = self.tab_widget.currentWidget()
+-        if hasattr(current_tab, 'clear_all_files'):
++        if hasattr(current_tab, "clear_all_files"):
+             current_tab.clear_all_files()
+ 
+     def _start_convert(self):
+         """Handle convert button click"""
+-        if hasattr(self, 'convert_tab'):
++        if hasattr(self, "convert_tab"):
+             self.convert_tab._start_conversion_process()
+ 
+     def _start_compress(self):
+         """Handle compress button click"""
+-        if hasattr(self, 'compress_tab'):
++        if hasattr(self, "compress_tab"):
+             self.compress_tab._start_compression()
+ 
+     def _start_merge(self):
+         """Handle merge button click"""
+-        if hasattr(self, 'merge_tab'):
++        if hasattr(self, "merge_tab"):
+             self.merge_tab._start_merge()
+ 
+     def _start_split(self):
+         """Handle split button click"""
+-        if hasattr(self, 'split_tab'):
++        if hasattr(self, "split_tab"):
+             self.split_tab._start_split()
+ 
+     def _start_extract(self):
+         """Handle extract button click"""
+-        if hasattr(self, 'extract_tab'):
++        if hasattr(self, "extract_tab"):
+             self.extract_tab._start_extract()
+ 
+     def _start_convert_to_image(self):
+         """Handle convert to image button click"""
+-        if hasattr(self, 'convert_to_image_tab'):
++        if hasattr(self, "convert_to_image_tab"):
+             self.convert_to_image_tab._start_convert_to_image()
+ 
+     def closeEvent(self, event):
+         # Stop any active workers
+-        if hasattr(self, 'convert_tab') and hasattr(self.convert_tab, 'stop_active_conversion'):
++        if hasattr(self, "convert_tab") and hasattr(self.convert_tab, "stop_active_conversion"):
+             self.convert_tab.stop_active_conversion()
+-        if hasattr(self, 'compress_tab') and hasattr(self.compress_tab, 'worker') and self.compress_tab.worker and self.compress_tab.worker.isRunning():
++        if (
++            hasattr(self, "compress_tab")
++            and hasattr(self.compress_tab, "worker")
++            and self.compress_tab.worker
++            and self.compress_tab.worker.isRunning()
++        ):
+             self.compress_tab.worker.stop()
+-        if hasattr(self, 'merge_tab') and hasattr(self.merge_tab, 'worker') and self.merge_tab.worker and self.merge_tab.worker.isRunning():
++        if (
++            hasattr(self, "merge_tab")
++            and hasattr(self.merge_tab, "worker")
++            and self.merge_tab.worker
++            and self.merge_tab.worker.isRunning()
++        ):
+             self.merge_tab.worker.stop()
+-        if hasattr(self, 'split_tab') and hasattr(self.split_tab, 'worker') and self.split_tab.worker and self.split_tab.worker.isRunning():
++        if (
++            hasattr(self, "split_tab")
++            and hasattr(self.split_tab, "worker")
++            and self.split_tab.worker
++            and self.split_tab.worker.isRunning()
++        ):
+             self.split_tab.worker.stop()
+-        if hasattr(self, 'extract_tab') and hasattr(self.extract_tab, 'worker') and self.extract_tab.worker and self.extract_tab.worker.isRunning():
++        if (
++            hasattr(self, "extract_tab")
++            and hasattr(self.extract_tab, "worker")
++            and self.extract_tab.worker
++            and self.extract_tab.worker.isRunning()
++        ):
+             self.extract_tab.worker.stop()
+         super().closeEvent(event)
++
+ 
+ def create_splash_screen():
+     """Create a beautiful splash screen"""
+     # Create a custom splash screen with gradient background
+     splash_pixmap = QPixmap(400, 300)
+     splash_pixmap.fill(QColor(214, 240, 250))  # Light blue background
+-    
++
+     # Create painter for custom drawing
+     painter = QPainter(splash_pixmap)
+     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+-    
++
+     # Draw gradient background
+     gradient = QColor(178, 224, 247)  # Lighter blue
+     painter.fillRect(0, 0, 400, 300, gradient)
+-    
++
+     # Draw title
+     title_font = QFont("Arial", 24, QFont.Weight.Bold)
+     painter.setFont(title_font)
+     painter.setPen(QColor(0, 0, 0))
+     painter.drawText(0, 80, 400, 40, Qt.AlignmentFlag.AlignCenter, "PDF Utilities")
+-    
++
+     # Draw subtitle - Updated to highlight key features
+     subtitle_font = QFont("Arial", 11)
+     painter.setFont(subtitle_font)
+     painter.setPen(QColor(100, 100, 100))
+     painter.drawText(0, 120, 400, 30, Qt.AlignmentFlag.AlignCenter, "Convert • Compress • Merge • Split • Extract")
+-    
++
+     # Draw version
+     version_font = QFont("Arial", 10)
+     painter.setFont(version_font)
+     painter.setPen(QColor(150, 150, 150))
+     painter.drawText(0, 150, 400, 20, Qt.AlignmentFlag.AlignCenter, "All-in-One PDF Solution")
+-    
++
+     # Draw loading text
+     loading_font = QFont("Arial", 11)
+     painter.setFont(loading_font)
+     painter.setPen(QColor(80, 80, 80))
+     painter.drawText(0, 200, 400, 30, Qt.AlignmentFlag.AlignCenter, "Initializing...")
+-    
++
+     painter.end()
+-    
++
+     # Create splash screen
+     splash = QSplashScreen(splash_pixmap)
+     splash.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
+-    
++
+     return splash
+ 
+-if __name__ == '__main__':
++
++if __name__ == "__main__":
+     app = QApplication(sys.argv)
+-    
++
+     # Create and show splash screen
+     splash = create_splash_screen()
+     splash.show()
+-    
++
+     # Process events to show splash screen immediately
+     app.processEvents()
+-    
++
+     # Create main window
+     window = PDFConverterApp()
+-    
++
+     # Create initialization thread
+     init_thread = InitializationThread()
+-    
++
+     def on_progress_update(message):
+         """Update splash screen with progress message"""
+         splash.showMessage(message, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter, QColor(0, 0, 0))
+         app.processEvents()
+-    
++
+     def on_initialization_complete():
+         """Handle initialization completion"""
+         # Initialize real tabs
+         window._initialize_real_tabs()
+-        
++
+         # Close splash screen and show main window
+         splash.finish(window)
+         window.show()
+-    
++
+     # Connect signals
+     init_thread.progress_updated.connect(on_progress_update)
+     init_thread.initialization_complete.connect(on_initialization_complete)
+-    
++
+     # Start initialization thread
+     init_thread.start()
+-    
++
+     # Show main window after a short delay (for better UX)
+     QTimer.singleShot(500, lambda: window.show() if not window.isVisible() else None)
+-    
+-    sys.exit(app.exec()) 
+\ No newline at end of file
++
++    sys.exit(app.exec())
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/main.py
+--- /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs.py	2025-06-21 11:46:30.041305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs.py	2025-06-21 11:46:33.577519+00:00
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/gui/tabs.py
+@@ -1,14 +1,33 @@
+ from PyQt6.QtWidgets import (
+-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
+-    QSpinBox, QCheckBox, QProgressBar, QPushButton, QMessageBox, QLineEdit, QTableWidgetItem
++    QWidget,
++    QVBoxLayout,
++    QHBoxLayout,
++    QLabel,
++    QComboBox,
++    QSpinBox,
++    QCheckBox,
++    QProgressBar,
++    QPushButton,
++    QMessageBox,
++    QLineEdit,
++    QTableWidgetItem,
+ )
+ from PyQt6.QtCore import Qt, pyqtSignal, QEvent
+ from PyQt6.QtGui import QKeySequence, QShortcut
+ from .base_tab import BaseTab
+-from workers import ConversionWorker, CompressionWorker, MergeWorker, SplitWorker, ExtractWorker, ConvertToImageWorker, ExtractTextWorker
++from workers import (
++    ConversionWorker,
++    CompressionWorker,
++    MergeWorker,
++    SplitWorker,
++    ExtractWorker,
++    ConvertToImageWorker,
++    ExtractTextWorker,
++)
+ import os
++
+ 
+ class ConvertTab(BaseTab):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.worker = None
+@@ -56,11 +75,11 @@
+ 
+     def _handle_conversion_finished(self, successful_messages, failed_messages):
+         """Handle conversion completion"""
+         self.start_btn.setEnabled(True)
+         self.progress_bar.setVisible(False)
+-        
++
+         if successful_messages and not failed_messages:
+             self.status_label.setText("Conversion completed successfully!")
+         elif successful_messages and failed_messages:
+             self.status_label.setText(f"Conversion completed with {len(failed_messages)} errors.")
+         else:
+@@ -79,21 +98,22 @@
+             self.worker.wait()
+             self.start_btn.setEnabled(True)
+             self.progress_bar.setVisible(False)
+             self.status_label.setText("Conversion stopped.")
+ 
++
+ class CompressTab(BaseTab):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self._setup_compress_ui()
+         self.worker = None
+         self.generated_files = []  # Track generated files
+ 
+     def _setup_compress_ui(self):
+         # Add compress-specific controls
+         compress_layout = QVBoxLayout()
+-        
++
+         # Compression Level
+         level_layout = QHBoxLayout()
+         level_label = QLabel("Compression Level:")
+         level_label.setStyleSheet("color: #000;")
+         self.level_combo = QComboBox()
+@@ -109,20 +129,22 @@
+         target_layout = QHBoxLayout()
+         target_label = QLabel("Target file size:")
+         target_label.setStyleSheet("color: #000;")
+         self.target_size_input = QLineEdit()
+         self.target_size_input.setPlaceholderText("Enter target size...")
+-        self.target_size_input.setStyleSheet("""
++        self.target_size_input.setStyleSheet(
++            """
+             QLineEdit {
+                 color: #000;
+                 background: #fff;
+                 border: 1px solid #b2e0f7;
+                 border-radius: 4px;
+                 padding: 4px 8px;
+                 max-width: 130px;
+             }
+-        """)
++        """
++        )
+         self.target_size_combo = QComboBox()
+         self.target_size_combo.setStyleSheet("color: #000;")
+         self.target_size_combo.addItems(["KB", "MB"])
+         self.target_size_combo.setCurrentText("KB")
+         target_layout.addWidget(target_label)
+@@ -154,11 +176,11 @@
+             self.status_label.setText("Please select an output directory.")
+             return
+ 
+         # Get compression settings
+         compression_mode = self.level_combo.currentText().lower()
+-        
++
+         # Get target size if specified
+         target_size_kb = None
+         target_size_text = self.target_size_input.text().strip()
+         if target_size_text:
+             try:
+@@ -167,18 +189,14 @@
+                     target_size *= 1024  # Convert MB to KB
+                 target_size_kb = int(target_size)
+             except ValueError:
+                 self.status_label.setText("Invalid target size value.")
+                 return
+-        
++
+         # Create and start worker
+         self.worker = CompressionWorker(
+-            pdf_files, 
+-            output_dir, 
+-            compression_mode=compression_mode,
+-            target_size_kb=target_size_kb,
+-            parent=self
++            pdf_files, output_dir, compression_mode=compression_mode, target_size_kb=target_size_kb, parent=self
+         )
+         self.worker.progress.connect(self._update_progress)
+         self.worker.status_update.connect(self._update_status)
+         self.worker.finished.connect(self._handle_compression_finished)
+         self.worker.error.connect(self._handle_compression_error)
+@@ -205,11 +223,11 @@
+ 
+     def _handle_compression_finished(self, successful_messages, failed_messages):
+         """Handle compression completion"""
+         self.start_btn.setEnabled(True)
+         self.progress_bar.setVisible(False)
+-        
++
+         if successful_messages and not failed_messages:
+             self.status_label.setText("Compression completed successfully!")
+         elif successful_messages and failed_messages:
+             self.status_label.setText(f"Compression completed with {len(failed_messages)} errors.")
+             self._cleanup_generated_files()  # Clean up on partial failure
+@@ -232,21 +250,22 @@
+                     os.remove(file_path)
+             except Exception as e:
+                 print(f"Error removing file {file_path}: {str(e)}")
+         self.generated_files = []
+ 
++
+ class MergeTab(BaseTab):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.worker = None
+         self._install_shortcuts()
+         # Disable sorting permanently for merge tab since order matters
+         self.file_table.setSortingEnabled(False)
+ 
+     def _install_shortcuts(self):
+-        shortcut_up = QShortcut(QKeySequence('Ctrl+Up'), self)
+-        shortcut_down = QShortcut(QKeySequence('Ctrl+Down'), self)
++        shortcut_up = QShortcut(QKeySequence("Ctrl+Up"), self)
++        shortcut_down = QShortcut(QKeySequence("Ctrl+Down"), self)
+         shortcut_up.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+         shortcut_down.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+         shortcut_up.activated.connect(self._move_selected_up)
+         shortcut_down.activated.connect(self._move_selected_down)
+ 
+@@ -277,11 +296,11 @@
+ 
+         for col in range(self.file_table.columnCount()):
+             # Take items from both rows
+             item1 = self.file_table.takeItem(row1, col)
+             item2 = self.file_table.takeItem(row2, col)
+-            
++
+             # Set items in swapped positions
+             self.file_table.setItem(row1, col, item2)
+             self.file_table.setItem(row2, col, item1)
+ 
+         self.file_table.blockSignals(False)
+@@ -312,11 +331,11 @@
+ 
+         # Get first filename and create merged filename
+         first_file = os.path.basename(pdf_files[0])
+         base_name = os.path.splitext(first_file)[0]
+         output_file = os.path.join(output_dir, f"{base_name}_merged.pdf")
+-        
++
+         # Create and start worker
+         self.worker = MergeWorker(pdf_files, output_file, parent=self)
+         self.worker.progress.connect(self._update_progress)
+         self.worker.status_update.connect(self._update_status)
+         self.worker.finished.connect(self._handle_merge_finished)
+@@ -339,35 +358,36 @@
+ 
+     def _handle_merge_finished(self, success):
+         """Handle merge completion"""
+         self.start_btn.setEnabled(True)
+         self.progress_bar.setVisible(False)
+-        
++
+         if success:
+             self.status_label.setText("PDFs merged successfully!")
+         else:
+             self.status_label.setText("Merge failed.")
+ 
+     def _handle_merge_error(self, error_message):
+         """Handle merge error"""
+         self.start_btn.setEnabled(True)
+         self.progress_bar.setVisible(False)
+         self.status_label.setText(f"Error: {error_message}")
++
+ 
+ class SplitTab(BaseTab):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self._setup_split_ui()
+         self.worker = None
+ 
+     def _setup_split_ui(self):
+         # Add split-specific controls
+         split_layout = QVBoxLayout()
+-        
++
+         # Split Mode and Range Input in same row
+         mode_layout = QHBoxLayout()
+-        
++
+         # Split Mode
+         mode_label = QLabel("Split Mode:")
+         mode_label.setStyleSheet("color: #000;")
+         self.mode_combo = QComboBox()
+         self.mode_combo.setStyleSheet("color: #000;")
+@@ -383,20 +403,22 @@
+         # Custom Range Input
+         range_label = QLabel("Page Range:")
+         range_label.setStyleSheet("color: #000;")
+         self.range_input = QLineEdit()
+         self.range_input.setPlaceholderText("e.g., 1,3,5-7,9")
+-        self.range_input.setStyleSheet("""
++        self.range_input.setStyleSheet(
++            """
+             QLineEdit {
+                 color: #000;
+                 background: #fff;
+                 border: 1px solid #b2e0f7;
+                 border-radius: 4px;
+                 padding: 4px 8px;
+                 max-width: 200px;
+             }
+-        """)
++        """
++        )
+         mode_layout.addWidget(range_label)
+         mode_layout.addWidget(self.range_input)
+         mode_layout.addStretch()
+ 
+         # Add the combined layout
+@@ -423,20 +445,20 @@
+     def _parse_page_ranges(self, range_str):
+         """Parse comma-separated page ranges into a list of page numbers"""
+         try:
+             pages = []
+             ranges = range_str.replace(" ", "").split(",")
+-            
++
+             for r in ranges:
+                 if "-" in r:
+                     start, end = map(int, r.split("-"))
+                     if start > end:
+                         raise ValueError("Invalid range: start > end")
+                     pages.extend(range(start, end + 1))
+                 else:
+                     pages.append(int(r))
+-            
++
+             return sorted(set(pages))  # Remove duplicates and sort
+         except ValueError as e:
+             raise ValueError(f"Invalid page range format: {str(e)}")
+ 
+     def _start_split(self):
+@@ -452,11 +474,11 @@
+             return
+ 
+         # Get split mode and validate custom range if needed
+         split_mode = self.mode_combo.currentText()
+         page_ranges = None
+-        
++
+         if split_mode == "Custom Range":
+             range_str = self.range_input.text().strip()
+             if not range_str:
+                 self.status_label.setText("Please enter page ranges.")
+                 return
+@@ -466,18 +488,14 @@
+                     self.status_label.setText("No valid page numbers found.")
+                     return
+             except ValueError as e:
+                 self.status_label.setText(f"Invalid page range: {str(e)}")
+                 return
+-        
++
+         # Create and start worker
+         self.worker = SplitWorker(
+-            pdf_files=pdf_files,
+-            output_directory=output_dir,
+-            split_mode=split_mode,
+-            page_ranges=page_ranges,
+-            parent=self
++            pdf_files=pdf_files, output_directory=output_dir, split_mode=split_mode, page_ranges=page_ranges, parent=self
+         )
+         self.worker.progress.connect(self._update_progress)
+         self.worker.status_update.connect(self._update_status)
+         self.worker.finished.connect(self._handle_split_finished)
+         self.worker.error.connect(self._handle_split_error)
+@@ -519,20 +537,21 @@
+         self.progress_bar.setVisible(False)
+         self.progress_bar.setValue(0)
+         if self.mode_combo.currentText() == "Custom Range":
+             self.range_input.clear()
+ 
++
+ class ExtractTab(BaseTab):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self._setup_extract_ui()
+         self.worker = None
+ 
+     def _setup_extract_ui(self):
+         # Add extract-specific controls
+         extract_layout = QVBoxLayout()
+-        
++
+         # Extract Mode
+         mode_layout = QHBoxLayout()
+         mode_label = QLabel("Extract Mode:")
+         mode_label.setStyleSheet("color: #000;")
+         self.mode_combo = QComboBox()
+@@ -581,20 +600,20 @@
+     def _parse_page_ranges(self, range_str):
+         """Parse comma-separated page ranges into a list of page numbers"""
+         try:
+             pages = []
+             ranges = range_str.replace(" ", "").split(",")
+-            
++
+             for r in ranges:
+                 if "-" in r:
+                     start, end = map(int, r.split("-"))
+                     if start > end:
+                         raise ValueError("Invalid range: start > end")
+                     pages.extend(range(start, end + 1))
+                 else:
+                     pages.append(int(r))
+-            
++
+             return sorted(set(pages))  # Remove duplicates and sort
+         except ValueError as e:
+             raise ValueError(f"Invalid page range format: {str(e)}")
+ 
+     def _start_extract(self):
+@@ -610,11 +629,11 @@
+             return
+ 
+         # Get extraction settings
+         extract_mode = self.mode_combo.currentText()
+         page_range = self.range_combo.currentText()
+-        
++
+         # Handle custom page range
+         page_ranges = None
+         if page_range == "Custom Range":
+             range_str = self.range_input.text().strip()
+             if not range_str:
+@@ -626,19 +645,19 @@
+                     QMessageBox.warning(self, "Invalid Range", "No valid page numbers found.")
+                     return
+             except ValueError as e:
+                 QMessageBox.warning(self, "Invalid Range", str(e))
+                 return
+-        
++
+         # Create and start worker
+         self.worker = ExtractWorker(
+             pdf_files=pdf_files,
+             output_directory=output_dir,
+             extract_mode=extract_mode,
+             page_range=page_range,
+             page_ranges=page_ranges,
+-            parent=self
++            parent=self,
+         )
+         self.worker.progress.connect(self._update_progress)
+         self.worker.status_update.connect(self._update_status)
+         self.worker.finished.connect(self._handle_extract_finished)
+         self.worker.error.connect(self._handle_extract_error)
+@@ -680,23 +699,24 @@
+         self.progress_bar.setVisible(False)
+         self.progress_bar.setValue(0)
+         if self.range_combo.currentText() == "Custom Range":
+             self.range_input.clear()
+ 
++
+ class ConvertToImageTab(BaseTab):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self._setup_convert_to_image_ui()
+         self.worker = None
+ 
+     def _setup_convert_to_image_ui(self):
+         # Add convert to image specific controls
+         convert_layout = QVBoxLayout()
+-        
++
+         # Image Format and DPI in a single row
+         format_dpi_layout = QHBoxLayout()
+-        
++
+         # Image Format
+         format_layout = QHBoxLayout()
+         format_label = QLabel("Image Format:")
+         format_label.setStyleSheet("color: #000;")
+         self.format_combo = QComboBox()
+@@ -704,14 +724,14 @@
+         self.format_combo.addItems(["PNG", "JPEG"])
+         self.format_combo.setCurrentText("PNG")
+         format_layout.addWidget(format_label)
+         format_layout.addWidget(self.format_combo)
+         format_dpi_layout.addLayout(format_layout)
+-        
++
+         # Add some space between format and DPI
+         format_dpi_layout.addSpacing(20)
+-        
++
+         # DPI Setting
+         dpi_layout = QHBoxLayout()
+         dpi_label = QLabel("DPI:")
+         dpi_label.setStyleSheet("color: #000;")
+         self.dpi_spin = QSpinBox()
+@@ -719,42 +739,42 @@
+         self.dpi_spin.setRange(72, 600)
+         self.dpi_spin.setValue(100)
+         dpi_layout.addWidget(dpi_label)
+         dpi_layout.addWidget(self.dpi_spin)
+         format_dpi_layout.addLayout(dpi_layout)
+-        
++
+         format_dpi_layout.addStretch()
+         convert_layout.addLayout(format_dpi_layout)
+ 
+         # Image Result Type and Color Type in a single row
+         result_color_layout = QHBoxLayout()
+-        
++
+         # Image Result Type
+         result_type_layout = QHBoxLayout()
+         result_type_label = QLabel("Image Result Type:")
+         result_type_label.setStyleSheet("color: #000;")
+         self.result_type_combo = QComboBox()
+         self.result_type_combo.setStyleSheet("color: #000;")
+         self.result_type_combo.addItems(["Multiple Images", "Single Big Image"])
+         result_type_layout.addWidget(result_type_label)
+         result_type_layout.addWidget(self.result_type_combo)
+         result_color_layout.addLayout(result_type_layout)
+-        
++
+         # Add some space between result type and color type
+         result_color_layout.addSpacing(20)
+-        
++
+         # Color Type
+         color_type_layout = QHBoxLayout()
+         color_type_label = QLabel("Color Type:")
+         color_type_label.setStyleSheet("color: #000;")
+         self.color_type_combo = QComboBox()
+         self.color_type_combo.setStyleSheet("color: #000;")
+         self.color_type_combo.addItems(["Color", "Gray Scale"])
+         color_type_layout.addWidget(color_type_label)
+         color_type_layout.addWidget(self.color_type_combo)
+         result_color_layout.addLayout(color_type_layout)
+-        
++
+         result_color_layout.addStretch()
+         convert_layout.addLayout(result_color_layout)
+ 
+         # Add convert-specific layout after the table
+         self.layout().addLayout(convert_layout)
+@@ -774,20 +794,20 @@
+         # Get conversion settings
+         image_format = self.format_combo.currentText().lower()
+         dpi = self.dpi_spin.value()
+         result_type = self.result_type_combo.currentText()
+         color_type = self.color_type_combo.currentText()
+-        
++
+         # Create and start worker
+         self.worker = ConvertToImageWorker(
+             pdf_files=pdf_files,
+             output_directory=output_dir,
+             image_format=image_format,
+             dpi=dpi,
+             result_type=result_type,
+             color_type=color_type,
+-            parent=self
++            parent=self,
+         )
+         self.worker.progress.connect(self._update_progress)
+         self.worker.status_update.connect(self._update_status)
+         self.worker.finished.connect(self._handle_conversion_finished)
+         self.worker.error.connect(self._handle_conversion_error)
+@@ -825,22 +845,23 @@
+     def add_files_to_table(self, file_paths):
+         """Override to clear status when new files are added"""
+         super().add_files_to_table(file_paths)
+         self.status_label.setText("")
+         self.progress_bar.setVisible(False)
+-        self.progress_bar.setValue(0) 
++        self.progress_bar.setValue(0)
++
+ 
+ class ExtractTextTab(BaseTab):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self._setup_extract_text_ui()
+         self.worker = None
+ 
+     def _setup_extract_text_ui(self):
+         # Add extract text specific controls
+         extract_layout = QVBoxLayout()
+-        
++
+         # Mode selection
+         mode_layout = QHBoxLayout()
+         mode_label = QLabel("Extraction Mode:")
+         mode_label.setStyleSheet("color: #000;")
+         self.mode_combo = QComboBox()
+@@ -849,11 +870,11 @@
+         self.mode_combo.currentIndexChanged.connect(self.on_mode_changed)
+         mode_layout.addWidget(mode_label)
+         mode_layout.addWidget(self.mode_combo)
+         mode_layout.addStretch()
+         extract_layout.addLayout(mode_layout)
+-        
++
+         # Page range input
+         range_layout = QHBoxLayout()
+         range_label = QLabel("Page Range:")
+         range_label.setStyleSheet("color: #000;")
+         self.page_range = QLineEdit()
+@@ -862,11 +883,11 @@
+         self.page_range.setEnabled(False)
+         range_layout.addWidget(range_label)
+         range_layout.addWidget(self.page_range)
+         range_layout.addStretch()
+         extract_layout.addLayout(range_layout)
+-        
++
+         # Output format
+         format_layout = QHBoxLayout()
+         format_label = QLabel("Output Format:")
+         format_label.setStyleSheet("color: #000;")
+         self.format_combo = QComboBox()
+@@ -874,11 +895,11 @@
+         self.format_combo.addItems(["Text", "Word"])
+         format_layout.addWidget(format_label)
+         format_layout.addWidget(self.format_combo)
+         format_layout.addStretch()
+         extract_layout.addLayout(format_layout)
+-        
++
+         # Add extract-specific layout after the table
+         self.layout().addLayout(extract_layout)
+ 
+     def on_mode_changed(self, index):
+         self.page_range.setEnabled(index == 2)  # Enable only for "Page Range" mode
+@@ -897,19 +918,19 @@
+ 
+         # Get extraction options
+         mode = self.mode_combo.currentText()
+         page_range = self.page_range.text() if mode == "Page Range" else None
+         output_format = self.format_combo.currentText().lower()
+-        
++
+         # Create and start worker
+         self.worker = ExtractTextWorker(
+             pdf_files=pdf_files,
+             output_directory=output_dir,
+             mode=mode,
+             page_range=page_range,
+             output_format=output_format,
+-            parent=self
++            parent=self,
+         )
+         self.worker.progress.connect(self._update_progress)
+         self.worker.status_update.connect(self._update_status)
+         self.worker.finished.connect(self._handle_extraction_finished)
+         self.worker.error.connect(self._handle_extraction_error)
+@@ -947,6 +968,6 @@
+     def add_files_to_table(self, file_paths):
+         """Override to clear status when new files are added"""
+         super().add_files_to_table(file_paths)
+         self.status_label.setText("")
+         self.progress_bar.setVisible(False)
+-        self.progress_bar.setValue(0) 
+\ No newline at end of file
++        self.progress_bar.setValue(0)
+would reformat /home/runner/work/PDFUtilities/PDFUtilities/workers.py
+
+Oh no! 💥 💔 💥
+17 files would be reformatted.
+--- /home/runner/work/PDFUtilities/PDFUtilities/workers.py	2025-06-21 11:46:30.042305+00:00
++++ /home/runner/work/PDFUtilities/PDFUtilities/workers.py	2025-06-21 11:46:33.584496+00:00
+@@ -1,50 +1,56 @@
+ import os
+ import sys
+ import fitz  # PyMuPDF
+ from PyQt6.QtCore import QThread, pyqtSignal
+-from converter import convert_multiple_pdfs_to_docx # Ensure converter.py is in the same directory or accessible via PYTHONPATH
+-from compressor import compress_multiple_pdfs # New import for compression
++from converter import (
++    convert_multiple_pdfs_to_docx,
++)  # Ensure converter.py is in the same directory or accessible via PYTHONPATH
++from compressor import compress_multiple_pdfs  # New import for compression
+ from pdf2docx import Converter
+ import tempfile
+ import shutil
+ from PIL import Image
+ import io
+ 
++
+ class ConversionWorker(QThread):
+-    progress = pyqtSignal(int) # Percentage progress (0-100)
+-    status_update = pyqtSignal(str) # For individual file status messages
+-    finished = pyqtSignal(list, list) # (successful_messages, failed_messages)
+-    error = pyqtSignal(str) # For critical errors in the thread itself
++    progress = pyqtSignal(int)  # Percentage progress (0-100)
++    status_update = pyqtSignal(str)  # For individual file status messages
++    finished = pyqtSignal(list, list)  # (successful_messages, failed_messages)
++    error = pyqtSignal(str)  # For critical errors in the thread itself
+ 
+     def __init__(self, pdf_files, output_directory, parent=None):
+         super().__init__(parent)
+         self.pdf_files = pdf_files
+         self.output_directory = output_directory
+         self._is_running = True
+ 
+     def run(self):
+         try:
+             self._is_running = True
++
+             # Define callbacks for the converter module
+             def progress_reporter(current_value, max_value):
+-                if not self._is_running: return
++                if not self._is_running:
++                    return
+                 if max_value > 0:
+                     percentage = int((current_value / max_value) * 100)
+                     self.progress.emit(percentage)
+                 else:
+                     self.progress.emit(0)
+ 
+             def status_reporter(message):
+-                if not self._is_running: return
++                if not self._is_running:
++                    return
+                 self.status_update.emit(message)
+-            
+-            if not self.pdf_files: # Check moved here to avoid issues if run with no files
++
++            if not self.pdf_files:  # Check moved here to avoid issues if run with no files
+                 status_reporter("No files selected for conversion.")
+-                self.finished.emit([],[])
++                self.finished.emit([], [])
+                 return
+-            
++
+             if not os.path.exists(self.output_directory):
+                 try:
+                     os.makedirs(self.output_directory)
+                     status_reporter(f"Created output directory: {self.output_directory}")
+                 except OSError as e:
+@@ -52,14 +58,11 @@
+                     self.error.emit(f"Failed to create output directory: {e}")
+                     self.finished.emit([], [f"Failed to create output directory: {e}"])
+                     return
+ 
+             successful_messages, failed_messages = convert_multiple_pdfs_to_docx(
+-                self.pdf_files,
+-                self.output_directory,
+-                progress_callback=progress_reporter,
+-                status_callback=status_reporter
++                self.pdf_files, self.output_directory, progress_callback=progress_reporter, status_callback=status_reporter
+             )
+             if self._is_running:
+                 self.finished.emit(successful_messages, failed_messages)
+ 
+         except Exception as e:
+@@ -68,10 +71,11 @@
+         finally:
+             self._is_running = False
+ 
+     def stop(self):
+         self._is_running = False
++
+ 
+ class CompressionWorker(QThread):
+     progress = pyqtSignal(int)
+     status_update = pyqtSignal(str)
+     finished = pyqtSignal(list, list)  # (successes, failures)
+@@ -86,20 +90,25 @@
+         self._is_running = True
+ 
+     def run(self):
+         try:
+             self._is_running = True
++
+             def progress_reporter(current, total):
+-                if not self._is_running: return
++                if not self._is_running:
++                    return
+                 percent = int((current / total) * 100) if total > 0 else 0
+                 self.progress.emit(percent)
++
+             def status_reporter(msg):
+-                if not self._is_running: return
++                if not self._is_running:
++                    return
+                 self.status_update.emit(msg)
++
+             if not self.pdf_files:
+                 status_reporter("No files selected for compression.")
+-                self.finished.emit([],[])
++                self.finished.emit([], [])
+                 return
+             if not os.path.exists(self.output_directory):
+                 try:
+                     os.makedirs(self.output_directory)
+                     status_reporter(f"Created output directory: {self.output_directory}")
+@@ -112,11 +121,11 @@
+                 self.pdf_files,
+                 self.output_directory,
+                 compression_mode=self.compression_mode,
+                 target_size_kb=self.target_size_kb,
+                 progress_callback=progress_reporter,
+-                status_callback=status_reporter
++                status_callback=status_reporter,
+             )
+             if self._is_running:
+                 self.finished.emit(successes, failures)
+         except Exception as e:
+             if self._is_running:
+@@ -124,10 +133,11 @@
+         finally:
+             self._is_running = False
+ 
+     def stop(self):
+         self._is_running = False
++
+ 
+ class MergeWorker(QThread):
+     progress = pyqtSignal(int)
+     status_update = pyqtSignal(str)
+     finished = pyqtSignal(bool)
+@@ -151,25 +161,25 @@
+                 os.makedirs(output_dir)
+                 self.status_update.emit(f"Created output directory: {output_dir}")
+ 
+             # Create a new PDF document
+             merged_pdf = fitz.open()
+-            
++
+             # Process each PDF file
+             for i, pdf_file in enumerate(self.pdf_files):
+                 try:
+                     self.status_update.emit(f"Processing {os.path.basename(pdf_file)}...")
+                     pdf_document = fitz.open(pdf_file)
+-                    
++
+                     # Insert all pages from the current PDF
+                     merged_pdf.insert_pdf(pdf_document)
+                     pdf_document.close()
+-                    
++
+                     # Update progress
+                     progress = int((i + 1) / total_files * 100)
+                     self.progress.emit(progress)
+-                    
++
+                 except Exception as e:
+                     self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
+                     return
+ 
+             # Save the merged PDF
+@@ -181,10 +191,11 @@
+             self.finished.emit(True)
+ 
+         except Exception as e:
+             self.error.emit(f"Error during merge: {str(e)}")
+             self.finished.emit(False)
++
+ 
+ class SplitWorker(QThread):
+     progress = pyqtSignal(int)
+     status_update = pyqtSignal(str)
+     finished = pyqtSignal(bool)
+@@ -201,11 +212,11 @@
+     def run(self):
+         try:
+             self._is_running = True
+             total_files = len(self.pdf_files)
+             success = True  # Track overall success
+-            
++
+             for i, pdf_file in enumerate(self.pdf_files):
+                 if not self._is_running:
+                     break
+ 
+                 try:
+@@ -220,39 +231,40 @@
+                                 break
+                             new_doc = fitz.open()
+                             new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+                             output_file = os.path.join(
+                                 self.output_directory,
+-                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_page_{page_num + 1}.pdf"
++                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_page_{page_num + 1}.pdf",
+                             )
+                             new_doc.save(output_file)
+                             new_doc.close()
+                             self.status_update.emit(f"Created page {page_num + 1} of {total_pages}")
+ 
+                     elif self.split_mode == "Custom Range":
+                         if not self.page_ranges:
+                             self.error.emit("No page ranges specified")
+                             success = False
+                             continue
+-                            
++
+                         # Validate all page numbers first
+                         invalid_pages = [p for p in self.page_ranges if p > total_pages]
+                         if invalid_pages:
+-                            self.error.emit(f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages.")
++                            self.error.emit(
++                                f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages."
++                            )
+                             success = False
+                             continue
+-                            
++
+                         # Create a new PDF for each range
+                         for range_idx, page_num in enumerate(self.page_ranges):
+                             if not self._is_running:
+                                 break
+-                                
++
+                             new_doc = fitz.open()
+-                            new_doc.insert_pdf(doc, from_page=page_num-1, to_page=page_num-1)  # Convert to 0-based index
++                            new_doc.insert_pdf(doc, from_page=page_num - 1, to_page=page_num - 1)  # Convert to 0-based index
+                             output_file = os.path.join(
+-                                self.output_directory,
+-                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_page_{page_num}.pdf"
++                                self.output_directory, f"{os.path.splitext(os.path.basename(pdf_file))[0]}_page_{page_num}.pdf"
+                             )
+                             new_doc.save(output_file)
+                             new_doc.close()
+                             self.status_update.emit(f"Created page {page_num}")
+ 
+@@ -260,41 +272,41 @@
+                         # Split into parts of approximately equal size
+                         target_size = 5 * 1024 * 1024  # 5MB target size
+                         current_size = 0
+                         current_part = 1
+                         new_doc = fitz.open()
+-                        
++
+                         for page_num in range(total_pages):
+                             if not self._is_running:
+                                 break
+                             new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+                             # Save to temporary file to check size
+                             temp_file = os.path.join(self.output_directory, "temp.pdf")
+                             new_doc.save(temp_file)
+                             current_size = os.path.getsize(temp_file)
+-                            
++
+                             if current_size >= target_size:
+                                 output_file = os.path.join(
+                                     self.output_directory,
+-                                    f"{os.path.splitext(os.path.basename(pdf_file))[0]}_part{current_part}.pdf"
++                                    f"{os.path.splitext(os.path.basename(pdf_file))[0]}_part{current_part}.pdf",
+                                 )
+                                 new_doc.save(output_file)
+                                 new_doc.close()
+                                 new_doc = fitz.open()
+                                 current_size = 0
+                                 current_part += 1
+                                 self.status_update.emit(f"Created part {current_part - 1}")
+-                        
++
+                         # Save remaining pages
+                         if new_doc.page_count > 0:
+                             output_file = os.path.join(
+                                 self.output_directory,
+-                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_part{current_part}.pdf"
++                                f"{os.path.splitext(os.path.basename(pdf_file))[0]}_part{current_part}.pdf",
+                             )
+                             new_doc.save(output_file)
+                             new_doc.close()
+-                        
++
+                         # Clean up temp file
+                         if os.path.exists(temp_file):
+                             os.remove(temp_file)
+ 
+                     doc.close()
+@@ -316,10 +328,11 @@
+         finally:
+             self._is_running = False
+ 
+     def stop(self):
+         self._is_running = False
++
+ 
+ class ExtractWorker(QThread):
+     progress = pyqtSignal(int)
+     status_update = pyqtSignal(str)
+     finished = pyqtSignal(bool)
+@@ -336,11 +349,11 @@
+ 
+     def run(self):
+         try:
+             self._is_running = True
+             total_files = len(self.pdf_files)
+-            
++
+             for i, pdf_file in enumerate(self.pdf_files):
+                 if not self._is_running:
+                     break
+ 
+                 try:
+@@ -355,17 +368,19 @@
+                         pages_to_process = range(start_page, end_page + 1)
+                     else:  # Custom Range
+                         if not self.page_ranges:
+                             self.error.emit("No page ranges specified")
+                             continue
+-                            
++
+                         # Validate all page numbers first
+                         invalid_pages = [p for p in self.page_ranges if p > total_pages]
+                         if invalid_pages:
+-                            self.error.emit(f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages.")
++                            self.error.emit(
++                                f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages."
++                            )
+                             continue
+-                            
++
+                         # Convert to 0-based index
+                         pages_to_process = [p - 1 for p in self.page_ranges]
+ 
+                     # Create output directory for this file
+                     file_base = os.path.splitext(os.path.basename(pdf_file))[0]
+@@ -390,18 +405,18 @@
+                         for page_num in pages_to_process:
+                             if not self._is_running:
+                                 break
+                             page = doc[page_num]
+                             image_list = page.get_images()
+-                            
++
+                             for img_index, img in enumerate(image_list):
+                                 if not self._is_running:
+                                     break
+                                 xref = img[0]
+                                 base_image = doc.extract_image(xref)
+                                 image_bytes = base_image["image"]
+-                                
++
+                                 # Save image
+                                 image_filename = f"page_{page_num + 1}_image_{img_index + 1}.{base_image['ext']}"
+                                 image_path = os.path.join(file_output_dir, image_filename)
+                                 with open(image_path, "wb") as img_file:
+                                     img_file.write(image_bytes)
+@@ -425,10 +440,11 @@
+         finally:
+             self._is_running = False
+ 
+     def stop(self):
+         self._is_running = False
++
+ 
+ class ConvertToImageWorker(QThread):
+     progress = pyqtSignal(int)
+     status_update = pyqtSignal(str)
+     finished = pyqtSignal(bool)
+@@ -447,11 +463,11 @@
+     def run(self):
+         try:
+             self._is_running = True
+             total_files = len(self.pdf_files)
+             success = True
+-            
++
+             for i, pdf_file in enumerate(self.pdf_files):
+                 if not self._is_running:
+                     break
+ 
+                 try:
+@@ -461,11 +477,11 @@
+ 
+                     # Create output directory for this file
+                     file_base = os.path.splitext(os.path.basename(pdf_file))[0]
+                     file_output_dir = os.path.join(self.output_directory, file_base)
+                     os.makedirs(file_output_dir, exist_ok=True)
+-                    
++
+                     # Log the output directory
+                     self.status_update.emit(f"Output directory: {file_output_dir}")
+ 
+                     # Determine colorspace based on color type
+                     colorspace = "gray" if self.color_type == "Gray Scale" else "rgb"
+@@ -479,31 +495,31 @@
+                             try:
+                                 page = doc[page_num]
+                                 # Calculate zoom factor based on DPI
+                                 zoom = self.dpi / 72  # 72 is the default DPI
+                                 matrix = fitz.Matrix(zoom, zoom)
+-                                
++
+                                 # Get page pixmap with appropriate colorspace
+                                 pix = page.get_pixmap(
+                                     matrix=matrix,
+                                     alpha=False,  # No alpha channel for better compatibility
+-                                    colorspace=colorspace
++                                    colorspace=colorspace,
+                                 )
+ 
+                                 # Convert to PIL Image for better format handling
+                                 if self.color_type == "Gray Scale":
+                                     img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
+                                 else:
+                                     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+-                                
++
+                                 # Save image
+                                 image_filename = f"page_{page_num + 1}.{self.image_format}"
+                                 image_path = os.path.join(file_output_dir, image_filename)
+-                                
++
+                                 # Log the image path
+                                 self.status_update.emit(f"Saving image to: {image_path}")
+-                                
++
+                                 if self.image_format == "jpeg":
+                                     img.save(image_path, "JPEG", quality=85, optimize=True)
+                                 else:  # PNG
+                                     img.save(image_path, "PNG", optimize=True)
+ 
+@@ -523,69 +539,65 @@
+ 
+                     else:  # Single Big Image
+                         # Calculate total height for all pages
+                         total_height = 0
+                         page_widths = []
+-                        
++
+                         for page_num in range(total_pages):
+                             page = doc[page_num]
+                             zoom = self.dpi / 72
+                             matrix = fitz.Matrix(zoom, zoom)
+                             rect = page.rect
+                             width = int(rect.width * zoom)
+                             height = int(rect.height * zoom)
+                             page_widths.append(width)
+                             total_height += height
+-                        
++
+                         # Use the maximum width
+                         max_width = max(page_widths)
+-                        
++
+                         # Create a large image to hold all pages
+                         if self.color_type == "Gray Scale":
+                             combined_img = Image.new("L", (max_width, total_height), 255)
+                         else:
+                             combined_img = Image.new("RGB", (max_width, total_height), (255, 255, 255))
+-                        
++
+                         current_y = 0
+-                        
++
+                         for page_num in range(total_pages):
+                             if not self._is_running:
+                                 break
+ 
+                             try:
+                                 page = doc[page_num]
+                                 zoom = self.dpi / 72
+                                 matrix = fitz.Matrix(zoom, zoom)
+-                                
+-                                pix = page.get_pixmap(
+-                                    matrix=matrix,
+-                                    alpha=False,
+-                                    colorspace=colorspace
+-                                )
++
++                                pix = page.get_pixmap(matrix=matrix, alpha=False, colorspace=colorspace)
+ 
+                                 if self.color_type == "Gray Scale":
+                                     img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
+                                 else:
+                                     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+-                                
++
+                                 # Paste the page image into the combined image
+                                 combined_img.paste(img, (0, current_y))
+                                 current_y += img.height
+-                                
++
+                                 self.status_update.emit(f"Processed page {page_num + 1} of {total_pages}")
+ 
+                             except Exception as e:
+                                 self.error.emit(f"Error processing page {page_num + 1}: {str(e)}")
+                                 success = False
+                                 continue
+-                        
++
+                         # Save the combined image
+                         image_filename = f"{file_base}_combined.{self.image_format}"
+                         image_path = os.path.join(file_output_dir, image_filename)
+-                        
++
+                         self.status_update.emit(f"Saving combined image to: {image_path}")
+-                        
++
+                         if self.image_format == "jpeg":
+                             combined_img.save(image_path, "JPEG", quality=85, optimize=True)
+                         else:  # PNG
+                             combined_img.save(image_path, "PNG", optimize=True)
+ 
+@@ -614,10 +626,11 @@
+         finally:
+             self._is_running = False
+ 
+     def stop(self):
+         self._is_running = False
++
+ 
+ class ExtractTextWorker(QThread):
+     progress = pyqtSignal(int)
+     status_update = pyqtSignal(str)
+     finished = pyqtSignal(bool)
+@@ -635,11 +648,11 @@
+     def run(self):
+         try:
+             self._is_running = True
+             total_files = len(self.pdf_files)
+             success = True
+-            
++
+             for i, pdf_file in enumerate(self.pdf_files):
+                 if not self._is_running:
+                     break
+ 
+                 try:
+@@ -649,11 +662,11 @@
+ 
+                     # Create output directory for this file
+                     file_base = os.path.splitext(os.path.basename(pdf_file))[0]
+                     file_output_dir = os.path.join(self.output_directory, file_base)
+                     os.makedirs(file_output_dir, exist_ok=True)
+-                    
++
+                     # Log the output directory
+                     self.status_update.emit(f"Output directory: {file_output_dir}")
+ 
+                     # Determine which pages to process
+                     if self.mode == "All Pages":
+@@ -692,10 +705,11 @@
+                             if self.output_format == "txt":
+                                 with open(output_file, "w", encoding="utf-8") as f:
+                                     f.write("\n\n".join(extracted_text))
+                             else:  # Word format
+                                 from docx import Document
++
+                                 doc = Document()
+                                 for text in extracted_text:
+                                     doc.add_paragraph(text)
+                                 doc.save(output_file)
+ 
+@@ -727,13 +741,13 @@
+         """Parse page range string (e.g., "1-3,5,7-9") into list of page numbers"""
+         if not page_range:
+             return range(total_pages)
+ 
+         pages = []
+-        for part in page_range.split(','):
+-            if '-' in part:
+-                start, end = map(int, part.split('-'))
++        for part in page_range.split(","):
++            if "-" in part:
++                start, end = map(int, part.split("-"))
+                 if start < 1 or end > total_pages or start > end:
+                     raise ValueError(f"Invalid page range: {part}")
+                 pages.extend(range(start - 1, end))
+             else:
+                 page = int(part)
+@@ -741,6 +755,6 @@
+                     raise ValueError(f"Invalid page number: {page}")
+                 pages.append(page - 1)
+         return sorted(set(pages))
+ 
+     def stop(self):
+-        self._is_running = False 
+\ No newline at end of file
++        self._is_running = False
+Error: Process completed with exit code 1.
+0s
+0s
+0s
+0s
+0s
