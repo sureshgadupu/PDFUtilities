@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -27,6 +31,16 @@ jobs:
     - name: Build Windows executable
       run: |
         python build_app.py
+        
+    - name: Verify Windows build
+      run: |
+        if (Test-Path "dist/PDFUtilities.exe") {
+          Write-Host "Windows executable created successfully"
+          Get-Item "dist/PDFUtilities.exe" | Select-Object Name, Length
+        } else {
+          Write-Error "Windows executable not found"
+          exit 1
+        }
         
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
@@ -62,6 +76,16 @@ jobs:
       run: |
         python build_app.py
         
+    - name: Verify Linux build
+      run: |
+        if [ -f "dist/PDFUtilities" ]; then
+          echo "Linux executable created successfully"
+          ls -la dist/PDFUtilities
+        else
+          echo "Error: Linux executable not found"
+          exit 1
+        fi
+        
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4
       with:
@@ -76,6 +100,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
       
     - name: Download Windows artifact
       uses: actions/download-artifact@v4
@@ -89,9 +115,28 @@ jobs:
         name: PDFUtilities-Linux
         path: ./linux-build
         
+    - name: Verify artifacts
+      run: |
+        echo "Verifying downloaded artifacts..."
+        ls -la ./windows-build/
+        ls -la ./linux-build/
+        
+        if [ ! -f "./windows-build/PDFUtilities.exe" ]; then
+          echo "Error: Windows executable not found"
+          exit 1
+        fi
+        
+        if [ ! -f "./linux-build/PDFUtilities" ]; then
+          echo "Error: Linux executable not found"
+          exit 1
+        fi
+        
+        echo "All artifacts verified successfully"
+        
     - name: Create source archive
       run: |
         git archive --format=zip --output=PDFUtilities-Source.zip HEAD
+        ls -la PDFUtilities-Source.zip
         
     - name: Create Release
       env:
@@ -100,6 +145,8 @@ jobs:
         # Extract version from tag
         VERSION=${GITHUB_REF#refs/tags/}
         RELEASE_NAME="PDF Utilities $VERSION"
+        
+        echo "Creating release for version: $VERSION"
         
         # Create release using GitHub CLI
         gh release create $VERSION \
@@ -128,23 +175,40 @@ jobs:
           --draft=false \
           --prerelease=false
         
+        echo "Release created successfully"
+        
     - name: Upload Windows executable
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
+        echo "Uploading Windows executable for version: $VERSION"
         gh release upload $VERSION ./windows-build/PDFUtilities.exe --clobber
+        echo "Windows executable uploaded successfully"
         
     - name: Upload Linux executable
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
+        echo "Uploading Linux executable for version: $VERSION"
         gh release upload $VERSION ./linux-build/PDFUtilities --clobber
+        echo "Linux executable uploaded successfully"
         
     - name: Upload source code
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
-        gh release upload $VERSION ./PDFUtilities-Source.zip --clobber 
+        echo "Uploading source code for version: $VERSION"
+        gh release upload $VERSION ./PDFUtilities-Source.zip --clobber
+        echo "Source code uploaded successfully"
+        
+    - name: Verify release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "Verifying release assets for version: $VERSION"
+        gh release view $VERSION --json assets --jq '.assets[].name'
+        echo "Release verification completed" 
