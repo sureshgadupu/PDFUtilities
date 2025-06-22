@@ -210,45 +210,85 @@ jobs:
       with:
         name: PDFUtilities-macOS-Intel
         path: ./macos-intel-build
+      continue-on-error: true
         
     - name: Download macOS Apple Silicon artifact
       uses: actions/download-artifact@v4
       with:
         name: PDFUtilities-macOS-AppleSilicon
         path: ./macos-arm64-build
+      continue-on-error: true
         
     - name: Download macOS Universal artifact
       uses: actions/download-artifact@v4
       with:
         name: PDFUtilities-macOS-Universal
         path: ./macos-universal-build
+      continue-on-error: true
         
     - name: Verify artifacts
       run: |
         echo "Verifying downloaded artifacts..."
-        ls -la ./windows-build/
-        ls -la ./linux-build/
-        ls -la ./macos-intel-build/
-        ls -la ./macos-arm64-build/
-        ls -la ./macos-universal-build/
         
-        if [ ! -f "./windows-build/PDFUtilities.exe" ]; then
-          echo "Error: Windows executable not found"
+        # Check Windows
+        if [ -d "./windows-build" ]; then
+          ls -la ./windows-build/
+          if [ ! -f "./windows-build/PDFUtilities.exe" ]; then
+            echo "Error: Windows executable not found"
+            exit 1
+          fi
+          echo "✅ Windows build verified"
+        else
+          echo "❌ Windows build directory not found"
           exit 1
         fi
         
-        if [ ! -f "./linux-build/PDFUtilities" ]; then
-          echo "Error: Linux executable not found"
+        # Check Linux
+        if [ -d "./linux-build" ]; then
+          ls -la ./linux-build/
+          if [ ! -f "./linux-build/PDFUtilities" ]; then
+            echo "Error: Linux executable not found"
+            exit 1
+          fi
+          echo "✅ Linux build verified"
+        else
+          echo "❌ Linux build directory not found"
           exit 1
         fi
         
-        # Check for at least one macOS build
-        if [ ! -f "./macos-intel-build/PDFUtilities" ] && [ ! -f "./macos-arm64-build/PDFUtilities" ] && [ ! -f "./macos-universal-build/PDFUtilities" ]; then
-          echo "Error: No macOS executable found"
+        # Check macOS builds (at least one should exist)
+        macos_found=false
+        
+        if [ -d "./macos-intel-build" ] && [ -f "./macos-intel-build/PDFUtilities" ]; then
+          echo "✅ macOS Intel build found"
+          ls -la ./macos-intel-build/
+          macos_found=true
+        else
+          echo "⚠️  macOS Intel build not found"
+        fi
+        
+        if [ -d "./macos-arm64-build" ] && [ -f "./macos-arm64-build/PDFUtilities" ]; then
+          echo "✅ macOS Apple Silicon build found"
+          ls -la ./macos-arm64-build/
+          macos_found=true
+        else
+          echo "⚠️  macOS Apple Silicon build not found"
+        fi
+        
+        if [ -d "./macos-universal-build" ] && [ -f "./macos-universal-build/PDFUtilities" ]; then
+          echo "✅ macOS Universal build found"
+          ls -la ./macos-universal-build/
+          macos_found=true
+        else
+          echo "⚠️  macOS Universal build not found"
+        fi
+        
+        if [ "$macos_found" = false ]; then
+          echo "❌ No macOS builds found - at least one is required"
           exit 1
         fi
         
-        echo "All artifacts verified successfully"
+        echo "All required artifacts verified successfully"
         
     - name: Create source archive
       run: |
@@ -263,7 +303,21 @@ jobs:
         VERSION=${GITHUB_REF#refs/tags/}
         RELEASE_NAME="PDF Utilities $VERSION"
         
+        # Check which macOS builds are available
+        MACOS_BUILDS=""
+        if [ -f "./macos-intel-build/PDFUtilities" ]; then
+          MACOS_BUILDS="$MACOS_BUILDS- macOS Intel (x86_64) executable\n"
+        fi
+        if [ -f "./macos-arm64-build/PDFUtilities" ]; then
+          MACOS_BUILDS="$MACOS_BUILDS- macOS Apple Silicon (arm64) executable\n"
+        fi
+        if [ -f "./macos-universal-build/PDFUtilities" ]; then
+          MACOS_BUILDS="$MACOS_BUILDS- macOS Universal binary (Intel + Apple Silicon)\n"
+        fi
+        
         echo "Creating release for version: $VERSION"
+        echo "Available macOS builds:"
+        echo -e "$MACOS_BUILDS"
         
         # Create release using GitHub CLI
         gh release create $VERSION \
@@ -277,14 +331,13 @@ jobs:
         - PDF splitting
         - Text extraction
         - PDF to image conversion
+        - Separate macOS builds for Intel and Apple Silicon architectures
         
         ### Downloads
         - Windows executable
         - Linux executable
-        - macOS Intel (x86_64) executable
-        - macOS Apple Silicon (arm64) executable
-        - macOS Universal binary (Intel + Apple Silicon)
-        - Source code
+        - macOS executables:
+        $MACOS_BUILDS- Source code
         
         ### System Requirements
         - Windows 10+ or Linux or macOS 10.15+
@@ -296,7 +349,7 @@ jobs:
         ### macOS Notes
         - Choose Intel build for Intel Macs
         - Choose Apple Silicon build for M1/M2/M3 Macs
-        - Universal binary works on both architectures
+        - Universal binary works on both architectures (if available)
         - May require security permissions on first run (System Preferences > Security & Privacy)" \
           --draft=false \
           --prerelease=false

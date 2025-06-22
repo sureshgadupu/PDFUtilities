@@ -146,6 +146,9 @@ def build_for_architecture(arch):
     except subprocess.CalledProcessError as e:
         print(f"❌ {arch} build failed: {e}")
         return False
+    except Exception as e:
+        print(f"❌ {arch} build failed with exception: {e}")
+        return False
 
 
 def create_universal_binary():
@@ -199,6 +202,9 @@ def create_universal_binary():
     except subprocess.CalledProcessError as e:
         print(f"❌ Failed to create universal binary: {e}")
         return False
+    except Exception as e:
+        print(f"❌ Failed to create universal binary with exception: {e}")
+        return False
 
 
 def main():
@@ -222,8 +228,12 @@ def main():
     successful_builds = []
     
     for arch in architectures:
-        if build_for_architecture(arch):
-            successful_builds.append(arch)
+        try:
+            if build_for_architecture(arch):
+                successful_builds.append(arch)
+        except Exception as e:
+            print(f"❌ Exception during {arch} build: {e}")
+            continue
     
     # Create universal binary if both architectures succeeded
     if len(successful_builds) == 2:
@@ -238,9 +248,24 @@ def main():
     elif len(successful_builds) == 1:
         print(f"\n⚠️  Only {successful_builds[0]} architecture built successfully")
         print(f"Build available at: dist/PDFUtilities-{successful_builds[0]}/")
+        print("Note: Universal binary not created (requires both architectures)")
     else:
         print("\n❌ No builds completed successfully")
-        sys.exit(1)
+        print("Trying fallback to single architecture build...")
+        
+        # Fallback: try building for the current architecture only
+        current_arch = platform.machine()
+        if current_arch in ["x86_64", "arm64"]:
+            print(f"Attempting build for current architecture: {current_arch}")
+            if build_for_architecture(current_arch):
+                print(f"✅ Fallback build successful for {current_arch}")
+                print(f"Build available at: dist/PDFUtilities-{current_arch}/")
+            else:
+                print("❌ Fallback build also failed")
+                sys.exit(1)
+        else:
+            print(f"❌ Unknown architecture: {current_arch}")
+            sys.exit(1)
     
     print("\n🎯 Build completed!")
     print("Note: Users may need to allow the app in System Preferences > Security & Privacy")
