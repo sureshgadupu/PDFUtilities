@@ -209,7 +209,7 @@ def create_universal_binary():
 
 def main():
     """Main build function."""
-    print("🚀 PDF Utilities macOS Build Script")
+    print("🚀 PDF Utilities macOS Build Script (Apple Silicon Only)")
     print("=" * 50)
     
     # Check we're on macOS
@@ -223,49 +223,35 @@ def main():
         print("❌ Error: pdf_utility.spec not found!")
         sys.exit(1)
     
-    # Build for each architecture
-    architectures = ["x86_64", "arm64"]
-    successful_builds = []
+    # Build only for Apple Silicon (arm64)
+    arch = "arm64"
+    print(f"Building only for Apple Silicon ({arch}) architecture...")
     
-    for arch in architectures:
-        try:
-            if build_for_architecture(arch):
-                successful_builds.append(arch)
-        except Exception as e:
-            print(f"❌ Exception during {arch} build: {e}")
-            continue
-    
-    # Create universal binary if both architectures succeeded
-    if len(successful_builds) == 2:
-        print(f"\n🎉 Both architectures built successfully: {successful_builds}")
-        if create_universal_binary():
-            print("\n📦 Build Summary:")
-            print("✅ Intel (x86_64) build: dist/PDFUtilities-x86_64/")
-            print("✅ Apple Silicon (arm64) build: dist/PDFUtilities-arm64/")
-            print("✅ Universal binary: dist/PDFUtilities/")
-        else:
-            print("⚠️  Universal binary creation failed, but separate builds are available")
-    elif len(successful_builds) == 1:
-        print(f"\n⚠️  Only {successful_builds[0]} architecture built successfully")
-        print(f"Build available at: dist/PDFUtilities-{successful_builds[0]}/")
-        print("Note: Universal binary not created (requires both architectures)")
-    else:
-        print("\n❌ No builds completed successfully")
-        print("Trying fallback to single architecture build...")
-        
-        # Fallback: try building for the current architecture only
-        current_arch = platform.machine()
-        if current_arch in ["x86_64", "arm64"]:
-            print(f"Attempting build for current architecture: {current_arch}")
-            if build_for_architecture(current_arch):
-                print(f"✅ Fallback build successful for {current_arch}")
-                print(f"Build available at: dist/PDFUtilities-{current_arch}/")
+    try:
+        if build_for_architecture(arch):
+            print(f"\n🎉 Apple Silicon build completed successfully!")
+            
+            # Move the architecture-specific build to the expected location
+            src_path = f"dist/PDFUtilities-{arch}"
+            dst_path = "dist/PDFUtilities"
+            
+            if os.path.exists(src_path):
+                if os.path.exists(dst_path):
+                    shutil.rmtree(dst_path)
+                shutil.move(src_path, dst_path)
+                print(f"Moved build from {src_path} to {dst_path}")
+                
+                print("\n📦 Build Summary:")
+                print("✅ Apple Silicon (arm64) build: dist/PDFUtilities/")
             else:
-                print("❌ Fallback build also failed")
+                print(f"❌ Build directory not found: {src_path}")
                 sys.exit(1)
         else:
-            print(f"❌ Unknown architecture: {current_arch}")
+            print("❌ Apple Silicon build failed")
             sys.exit(1)
+    except Exception as e:
+        print(f"❌ Exception during Apple Silicon build: {e}")
+        sys.exit(1)
     
     print("\n🎯 Build completed!")
     print("Note: Users may need to allow the app in System Preferences > Security & Privacy")
