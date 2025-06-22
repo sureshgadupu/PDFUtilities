@@ -166,6 +166,7 @@ jobs:
         path: dist/PDFUtilities-x86_64
         retention-days: 30
       if: hashFiles('dist/PDFUtilities-x86_64/**') != ''
+      continue-on-error: true
         
     - name: Upload macOS Apple Silicon artifact
       uses: actions/upload-artifact@v4
@@ -174,6 +175,7 @@ jobs:
         path: dist/PDFUtilities-arm64
         retention-days: 30
       if: hashFiles('dist/PDFUtilities-arm64/**') != ''
+      continue-on-error: true
         
     - name: Upload macOS Universal artifact
       uses: actions/upload-artifact@v4
@@ -182,6 +184,33 @@ jobs:
         path: dist/PDFUtilities
         retention-days: 30
       if: hashFiles('dist/PDFUtilities/**') != ''
+      continue-on-error: true
+        
+    - name: Create fallback macOS build
+      if: hashFiles('dist/PDFUtilities-x86_64/**') == '' && hashFiles('dist/PDFUtilities-arm64/**') == '' && hashFiles('dist/PDFUtilities/**') == ''
+      run: |
+        echo "No macOS builds found, creating fallback build..."
+        
+        # Try to build for current architecture
+        python build_app.py
+        
+        # Check if any build was created
+        if [ -d "dist/PDFUtilities" ]; then
+          echo "✅ Fallback build created successfully"
+          ls -la dist/PDFUtilities/
+        else
+          echo "❌ Fallback build also failed"
+          exit 1
+        fi
+        
+    - name: Upload fallback macOS artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-Fallback
+        path: dist/PDFUtilities
+        retention-days: 30
+      if: hashFiles('dist/PDFUtilities/**') != '' && hashFiles('dist/PDFUtilities-x86_64/**') == '' && hashFiles('dist/PDFUtilities-arm64/**') == ''
+      continue-on-error: true
 
   create-release:
     needs: [build-windows, build-linux, build-macos]
@@ -224,6 +253,13 @@ jobs:
       with:
         name: PDFUtilities-macOS-Universal
         path: ./macos-universal-build
+      continue-on-error: true
+        
+    - name: Download macOS Fallback artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: PDFUtilities-macOS-Fallback
+        path: ./macos-fallback-build
       continue-on-error: true
         
     - name: Verify artifacts
@@ -283,6 +319,14 @@ jobs:
           echo "⚠️  macOS Universal build not found"
         fi
         
+        if [ -d "./macos-fallback-build" ] && [ -f "./macos-fallback-build/PDFUtilities" ]; then
+          echo "✅ macOS Fallback build found"
+          ls -la ./macos-fallback-build/
+          macos_found=true
+        else
+          echo "⚠️  macOS Fallback build not found"
+        fi
+        
         if [ "$macos_found" = false ]; then
           echo "❌ No macOS builds found - at least one is required"
           exit 1
@@ -313,6 +357,9 @@ jobs:
         fi
         if [ -f "./macos-universal-build/PDFUtilities" ]; then
           MACOS_BUILDS="$MACOS_BUILDS- macOS Universal binary (Intel + Apple Silicon)\n"
+        fi
+        if [ -f "./macos-fallback-build/PDFUtilities" ]; then
+          MACOS_BUILDS="$MACOS_BUILDS- macOS Fallback build (current architecture)\n"
         fi
         
         echo "Creating release for version: $VERSION"
@@ -411,6 +458,19 @@ jobs:
           echo "macOS Universal executable uploaded successfully"
         else
           echo "macOS Universal executable not found, skipping upload"
+        fi
+        
+    - name: Upload macOS Fallback executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        if [ -f "./macos-fallback-build/PDFUtilities" ]; then
+          echo "Uploading macOS Fallback executable for version: $VERSION"
+          gh release upload $VERSION ./macos-fallback-build/PDFUtilities --clobber
+          echo "macOS Fallback executable uploaded successfully"
+        else
+          echo "macOS Fallback executable not found, skipping upload"
         fi
         
     - name: Upload source code
