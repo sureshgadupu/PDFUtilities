@@ -156,22 +156,8 @@ def build():
     # Build command with platform-specific options
     command = ["pyinstaller", spec_file, "--noconfirm", "--clean", "--log-level=INFO"]
     
-    # Add macOS-specific options to handle Qt framework issues
     if system == "Darwin":
-        command.extend([
-            # "--no-strip",  # Don't strip binaries - helps with Qt frameworks. This is the default on macOS and the flag is invalid.
-            "--exclude-module", "QtBluetooth",  # Exclude problematic Qt modules we don't need
-            "--exclude-module", "QtNfc",
-            "--exclude-module", "QtSensors", 
-            "--exclude-module", "QtSerialPort",
-            "--exclude-module", "QtTest",
-            "--exclude-module", "QtLocation",
-            "--exclude-module", "QtQuick",
-            "--exclude-module", "QtQml",
-            "--exclude-module", "QtMultimedia",
-            "--exclude-module", "QtNetwork",  # Might need this, remove if network functionality needed
-        ])
-        print("Added macOS-specific build options to avoid Qt framework conflicts")
+        print("macOS-specific build options are now handled in the spec file.")
 
     print(f"Running command: {' '.join(command)}")
 

@@ -69,6 +69,15 @@ elif sys.platform.startswith("linux"):
 print(f"[SPEC DEBUG] Total binaries to include: {len(binaries)}")
 print(f"[SPEC DEBUG] Total data files to include: {len(datas)}")
 
+# Platform-specific excludes
+mac_excludes = []
+if sys.platform == "darwin":
+    print("[SPEC DEBUG] Applying macOS-specific module exclusions")
+    mac_excludes = [
+        "QtBluetooth", "QtNfc", "QtSensors", "QtSerialPort", "QtTest",
+        "QtLocation", "QtQuick", "QtQml", "QtMultimedia", "QtNetwork"
+    ]
+
 # Basic Analysis
 a = Analysis(
     ['main.py'],
@@ -90,7 +99,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=mac_excludes,
     noarchive=False,
     optimize=0,
 )
