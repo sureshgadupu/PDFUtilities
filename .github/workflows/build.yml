@@ -105,7 +105,9 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         mkdir -p release-assets
-        cp dist/PDFUtilities release-assets/PDFUtilities-Linux
+        if [ -d "dist/PDFUtilities" ]; then
+          cp -r dist/PDFUtilities release-assets/PDFUtilities-Linux
+        fi
         
     - name: Upload release assets
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -153,6 +155,9 @@ jobs:
         
     - name: Build macOS executable
       run: |
+        # Set environment variables to help with macOS build
+        export PYTHONPATH=$PWD:$PYTHONPATH
+        # Build with additional PyInstaller options for macOS
         python build_app.py
         
     - name: Upload macOS artifact

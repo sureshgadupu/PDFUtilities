@@ -132,12 +132,46 @@ def build():
         cleanup_dist_folder()
         # macOS-specific setup
         print("macOS build detected - ensuring proper permissions...")
+        
+        # Set environment variables to help with Qt framework issues
+        os.environ['PYTHONPATH'] = os.getcwd() + ':' + os.environ.get('PYTHONPATH', '')
+        
+        # Clear any cached PyInstaller data that might cause issues
+        cache_dirs = [
+            os.path.expanduser('~/Library/Caches/pyinstaller'),
+            os.path.join(os.getcwd(), 'build'),
+            os.path.join(os.getcwd(), '__pycache__')
+        ]
+        for cache_dir in cache_dirs:
+            if os.path.exists(cache_dir):
+                try:
+                    shutil.rmtree(cache_dir)
+                    print(f"Cleared cache directory: {cache_dir}")
+                except Exception as e:
+                    print(f"Warning: Could not clear cache {cache_dir}: {e}")
     else:
         print(f"Unsupported operating system: {system}")
         sys.exit(1)
 
-    # Common build command with verbose output
-    command = ["pyinstaller", spec_file, "--noconfirm", "--clean", "--log-level=INFO"]  # Add verbose logging
+    # Build command with platform-specific options
+    command = ["pyinstaller", spec_file, "--noconfirm", "--clean", "--log-level=INFO"]
+    
+    # Add macOS-specific options to handle Qt framework issues
+    if system == "Darwin":
+        command.extend([
+            "--no-strip",  # Don't strip binaries - helps with Qt frameworks
+            "--exclude-module", "QtBluetooth",  # Exclude problematic Qt modules we don't need
+            "--exclude-module", "QtNfc",
+            "--exclude-module", "QtSensors", 
+            "--exclude-module", "QtSerialPort",
+            "--exclude-module", "QtTest",
+            "--exclude-module", "QtLocation",
+            "--exclude-module", "QtQuick",
+            "--exclude-module", "QtQml",
+            "--exclude-module", "QtMultimedia",
+            "--exclude-module", "QtNetwork",  # Might need this, remove if network functionality needed
+        ])
+        print("Added macOS-specific build options to avoid Qt framework conflicts")
 
     print(f"Running command: {' '.join(command)}")
 

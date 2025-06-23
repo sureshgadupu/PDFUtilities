@@ -123,8 +123,37 @@ if sys.platform == "win32":
         entitlements_file=None,
         icon='gui/icons/image.ico'
     )
+elif sys.platform == "darwin":
+    print("[SPEC DEBUG] macOS build - creating directory structure with macOS-specific settings")
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name=app_name,
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=False,  # Disable UPX on macOS to avoid framework issues
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+    )
+    print("[SPEC DEBUG] Creating COLLECT for macOS with framework handling")
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.datas,
+        strip=False,
+        upx=False,  # Disable UPX on macOS
+        upx_exclude=[],
+        name=app_name,
+    )
 else:
-    print(f"[SPEC DEBUG] Non-Windows build ({sys.platform}) - creating directory structure")
+    print(f"[SPEC DEBUG] Linux build ({sys.platform}) - creating directory structure")
     exe = EXE(
         pyz,
         a.scripts,
@@ -142,7 +171,7 @@ else:
         codesign_identity=None,
         entitlements_file=None,
     )
-    print("[SPEC DEBUG] Creating COLLECT for directory structure")
+    print("[SPEC DEBUG] Creating COLLECT for Linux directory structure")
     coll = COLLECT(
         exe,
         a.binaries,
