@@ -104,6 +104,37 @@ a = Analysis(
     optimize=0,
 )
 
+# Manually filter out problematic Qt frameworks on macOS AFTER analysis
+if sys.platform == 'darwin':
+    print('[SPEC DEBUG] Manually filtering unwanted Qt frameworks from collected binaries.')
+    
+    # List of framework names (without .framework extension) to exclude
+    frameworks_to_exclude = {
+        'QtBluetooth', 'QtNfc', 'QtSensors', 'QtSerialPort', 'QtTest',
+        'QtLocation', 'QtQuick', 'QtQml', 'QtMultimedia', 'QtNetwork',
+    }
+    
+    # a.binaries is a list of tuples: (destination_path, source_path, type)
+    # We remove entries where the source_path points to a framework we want to exclude.
+    
+    filtered_binaries = []
+    excluded_count = 0
+    for binary_tuple in a.binaries:
+        source_path = binary_tuple[1]
+        
+        # Check if the source path contains '/FRAMEWORK_NAME.framework/'
+        if any(f'/{name}.framework/' in source_path for name in frameworks_to_exclude):
+            print(f'[SPEC DEBUG]   - Excluding binary from framework: {source_path}')
+            excluded_count += 1
+        else:
+            filtered_binaries.append(binary_tuple)
+            
+    if excluded_count > 0:
+        print(f'[SPEC DEBUG]   ...removed {excluded_count} binary files belonging to excluded frameworks.')
+    
+    # Overwrite the binaries list with the filtered one
+    a.binaries = filtered_binaries
+
 pyz = PYZ(a.pure)
 
 # Create EXE with platform-specific options
