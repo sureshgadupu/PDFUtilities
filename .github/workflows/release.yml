@@ -121,9 +121,9 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
         
-    - name: Build macOS executable (Apple Silicon only)
+    - name: Build macOS executable
       run: |
-        echo "Building macOS executable for Apple Silicon (arm64)..."
+        echo "Building macOS executable..."
         echo "Current directory: $(pwd)"
         echo "Python version: $(python --version)"
         echo "Architecture: $(uname -m)"
@@ -138,9 +138,9 @@ jobs:
         
         echo "✅ pdf_utility.spec found"
         
-        # Run the macOS-specific build script
-        echo "Running build_macos.py for Apple Silicon..."
-        python build_macos.py
+        # Run the standard build script
+        echo "Running build_app.py..."
+        python build_app.py
         
         # Check build result
         BUILD_EXIT_CODE=$?
@@ -161,46 +161,11 @@ jobs:
           exit 1
         fi
         
-        echo "✅ macOS Apple Silicon build completed successfully"
-        
-    - name: Fallback build attempt
-      if: failure()
-      run: |
-        echo "Primary build failed, attempting fallback build..."
-        echo "Cleaning up any partial build artifacts..."
-        rm -rf build/ dist/ *.pyc __pycache__/
-        
-        # Try direct PyInstaller command with directory output
-        echo "Attempting direct PyInstaller build for directory output..."
-        pyinstaller pdf_utility.spec --noconfirm --clean --log-level=DEBUG
-        
-        # Check result
-        if [ -d "dist/PDFUtilities" ]; then
-          echo "✅ Fallback build successful - directory structure created"
-          echo "Contents of dist/PDFUtilities/:"
-          ls -la dist/PDFUtilities/
-          
-          if [ -f "dist/PDFUtilities/PDFUtilities" ]; then
-            echo "✅ Executable found in fallback build"
-            file dist/PDFUtilities/PDFUtilities
-          else
-            echo "❌ Executable not found in fallback build"
-            exit 1
-          fi
-        else
-          echo "❌ Fallback build also failed - no directory structure created"
-          echo "Final directory listing:"
-          ls -la
-          if [ -d "dist" ]; then
-            echo "Contents of dist:"
-            ls -la dist/
-          fi
-          exit 1
-        fi
+        echo "✅ macOS build completed successfully"
         
     - name: Verify macOS build
       run: |
-        echo "Verifying macOS Apple Silicon build..."
+        echo "Verifying macOS build..."
         echo "Contents of current directory:"
         ls -la
         
@@ -212,29 +177,17 @@ jobs:
           exit 1
         fi
         
-        if [ -d "dist/PDFUtilities" ]; then
-          echo "✅ macOS build directory found"
-          echo "Contents of dist/PDFUtilities/:"
-          ls -la dist/PDFUtilities/
-          
-          if [ -f "dist/PDFUtilities/PDFUtilities" ]; then
-            echo "✅ Executable file found"
-            echo "File information:"
-            file dist/PDFUtilities/PDFUtilities
-            echo "Architecture information:"
-            lipo -info dist/PDFUtilities/PDFUtilities || echo "lipo info not available"
-            echo "File size:"
-            ls -lh dist/PDFUtilities/PDFUtilities
-          else
-            echo "❌ Executable file not found in dist/PDFUtilities/"
-            echo "Available files in PDFUtilities directory:"
-            ls -la dist/PDFUtilities/
-            exit 1
-          fi
-          
-          echo "✅ macOS Apple Silicon build verification complete"
+        if [ -f "dist/PDFUtilities" ]; then
+          echo "✅ macOS executable file found"
+          echo "File information:"
+          file dist/PDFUtilities
+          echo "Architecture information:"
+          lipo -info dist/PDFUtilities || echo "lipo info not available"
+          echo "File size:"
+          ls -lh dist/PDFUtilities
+          echo "✅ macOS build verification complete"
         else
-          echo "❌ macOS build directory not found"
+          echo "❌ macOS executable file not found"
           echo "Available items in dist:"
           ls -la dist/
           exit 1
@@ -307,7 +260,7 @@ jobs:
           exit 1
         fi
         
-        # Check macOS (should be a directory with the executable inside)
+        # Check macOS (should be a single executable file)
         if [ -d "./macos-build" ]; then
           echo "✅ macOS build directory found"
           echo "Contents of macos-build:"
@@ -319,7 +272,7 @@ jobs:
             file ./macos-build/PDFUtilities
             echo "Architecture information:"
             lipo -info ./macos-build/PDFUtilities || echo "lipo info not available"
-            echo "✅ macOS Apple Silicon build verified"
+            echo "✅ macOS build verified"
           else
             echo "❌ PDFUtilities executable not found in macos-build directory"
             echo "Available files:"
