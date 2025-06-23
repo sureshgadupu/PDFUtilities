@@ -159,7 +159,7 @@ def build():
     # Add macOS-specific options to handle Qt framework issues
     if system == "Darwin":
         command.extend([
-            "--no-strip",  # Don't strip binaries - helps with Qt frameworks
+            # "--no-strip",  # Don't strip binaries - helps with Qt frameworks. This is the default on macOS and the flag is invalid.
             "--exclude-module", "QtBluetooth",  # Exclude problematic Qt modules we don't need
             "--exclude-module", "QtNfc",
             "--exclude-module", "QtSensors", 
