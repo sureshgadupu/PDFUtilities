@@ -236,4 +236,6 @@ else:
         upx=True,
         upx_exclude=[],
         name=app_name,
-    ) 
+    )
+
+sys.setrecursionlimit(sys.getrecursionlimit() * 5) 
