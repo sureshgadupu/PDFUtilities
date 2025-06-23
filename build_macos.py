@@ -116,27 +116,54 @@ def build_for_architecture(arch):
         if process.returncode == 0:
             print(f"✅ {arch} build completed successfully!")
             
-            # Rename the output to include architecture
+            # Check what was created
             src_path = "dist/PDFUtilities"
             dst_path = f"dist/PDFUtilities-{arch}"
             
             if os.path.exists(src_path):
-                if os.path.exists(dst_path):
-                    shutil.rmtree(dst_path)
-                shutil.move(src_path, dst_path)
-                print(f"Renamed build to: {dst_path}")
+                print(f"Build output found: {src_path}")
                 
-                # Verify architecture
+                # Check if it's a file or directory
+                if os.path.isfile(src_path):
+                    print(f"⚠️  Build created single file: {src_path}")
+                    print("This indicates the spec file is not creating directory structure correctly")
+                elif os.path.isdir(src_path):
+                    print(f"✅ Build created directory: {src_path}")
+                
+                # Move/rename the output
+                if os.path.exists(dst_path):
+                    if os.path.isfile(dst_path):
+                        os.remove(dst_path)
+                    else:
+                        shutil.rmtree(dst_path)
+                
+                shutil.move(src_path, dst_path)
+                print(f"Moved build to: {dst_path}")
+                
+                # Verify architecture (handle both file and directory cases)
                 try:
-                    result = subprocess.run(
-                        ["lipo", "-info", f"{dst_path}/PDFUtilities"],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                    print(f"Architecture info: {result.stdout.strip()}")
+                    if os.path.isfile(dst_path):
+                        # Single file executable
+                        executable_path = dst_path
+                    else:
+                        # Directory with executable inside
+                        executable_path = f"{dst_path}/PDFUtilities"
+                    
+                    if os.path.exists(executable_path):
+                        result = subprocess.run(
+                            ["lipo", "-info", executable_path],
+                            capture_output=True,
+                            text=True,
+                            check=True
+                        )
+                        print(f"Architecture info: {result.stdout.strip()}")
+                    else:
+                        print(f"Executable not found at: {executable_path}")
                 except Exception as e:
                     print(f"Could not verify architecture: {e}")
+            else:
+                print(f"❌ No build output found at: {src_path}")
+                return False
             
             return True
         else:
@@ -236,15 +263,47 @@ def main():
             dst_path = "dist/PDFUtilities"
             
             if os.path.exists(src_path):
+                print(f"Moving {src_path} to {dst_path}")
+                
+                # Check if source is file or directory
+                if os.path.isfile(src_path):
+                    print("⚠️  Source is a single file - this may cause workflow issues")
+                    print("The workflow expects a directory structure")
+                elif os.path.isdir(src_path):
+                    print("✅ Source is a directory - correct for workflow")
+                
+                # Remove destination if it exists
                 if os.path.exists(dst_path):
-                    shutil.rmtree(dst_path)
+                    if os.path.isfile(dst_path):
+                        os.remove(dst_path)
+                    else:
+                        shutil.rmtree(dst_path)
+                
+                # Move source to destination
                 shutil.move(src_path, dst_path)
-                print(f"Moved build from {src_path} to {dst_path}")
+                print(f"Successfully moved build from {src_path} to {dst_path}")
+                
+                # Verify final structure
+                if os.path.isdir(dst_path):
+                    print(f"✅ Final build is directory: {dst_path}")
+                    print("Contents:")
+                    for item in os.listdir(dst_path):
+                        item_path = os.path.join(dst_path, item)
+                        if os.path.isfile(item_path):
+                            size = os.path.getsize(item_path)
+                            print(f"  📄 {item} ({size} bytes)")
+                        else:
+                            print(f"  📁 {item}/")
+                else:
+                    print(f"⚠️  Final build is single file: {dst_path}")
                 
                 print("\n📦 Build Summary:")
-                print("✅ Apple Silicon (arm64) build: dist/PDFUtilities/")
+                if os.path.isdir(dst_path):
+                    print("✅ Apple Silicon (arm64) build: dist/PDFUtilities/ (directory)")
+                else:
+                    print("⚠️  Apple Silicon (arm64) build: dist/PDFUtilities (single file)")
             else:
-                print(f"❌ Build directory not found: {src_path}")
+                print(f"❌ Build not found: {src_path}")
                 sys.exit(1)
         else:
             print("❌ Apple Silicon build failed")

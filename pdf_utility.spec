@@ -98,7 +98,10 @@ a = Analysis(
 pyz = PYZ(a.pure)
 
 # Create EXE with platform-specific options
+print(f"[SPEC DEBUG] Platform check: sys.platform = {sys.platform}")
+
 if sys.platform == "win32":
+    print("[SPEC DEBUG] Windows build - creating single file executable")
     exe = EXE(
         pyz,
         a.scripts,
@@ -121,6 +124,7 @@ if sys.platform == "win32":
         icon='gui/icons/image.ico'
     )
 else:
+    print(f"[SPEC DEBUG] Non-Windows build ({sys.platform}) - creating directory structure")
     exe = EXE(
         pyz,
         a.scripts,
@@ -138,6 +142,7 @@ else:
         codesign_identity=None,
         entitlements_file=None,
     )
+    print("[SPEC DEBUG] Creating COLLECT for directory structure")
     coll = COLLECT(
         exe,
         a.binaries,
