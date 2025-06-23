@@ -238,7 +238,7 @@ jobs:
         if [ -d "./windows-build" ]; then
           ls -la ./windows-build/
           if [ ! -f "./windows-build/PDFUtilities.exe" ]; then
-            echo "Error: Windows executable not found"
+            echo "❌ Error: Windows executable not found"
             exit 1
           fi
           echo "✅ Windows build verified"
@@ -251,7 +251,7 @@ jobs:
         if [ -d "./linux-build" ]; then
           ls -la ./linux-build/
           if [ ! -f "./linux-build/PDFUtilities" ]; then
-            echo "Error: Linux executable not found"
+            echo "❌ Error: Linux executable not found"
             exit 1
           fi
           echo "✅ Linux build verified"
@@ -286,7 +286,7 @@ jobs:
           exit 1
         fi
         
-        echo "All required artifacts verified successfully"
+        echo "✅ All required artifacts verified successfully"
         
     - name: Create source archive
       run: |
@@ -315,26 +315,30 @@ jobs:
         - PDF splitting
         - Text extraction
         - PDF to image conversion
-        - macOS build optimized for Apple Silicon (M1/M2/M3 processors)
         
         ### Downloads
-        - Windows executable
-        - Linux executable
-        - macOS executable (Apple Silicon only)
-        - Source code
+        - **Windows (x64)**: PDFUtilities-Windows-x64.exe
+        - **Linux (x64)**: PDFUtilities-Linux-x64
+        - **macOS (Apple Silicon)**: PDFUtilities-macOS-arm64
+        - **Source code**: PDFUtilities-Source.zip
         
         ### System Requirements
-        - Windows 10+ or Linux or macOS 10.15+
-        - macOS: Apple Silicon (M1/M2/M3) processors only
-        - Python 3.11+ (for source installation)
+        - **Windows**: Windows 10+ (x64)
+        - **Linux**: Ubuntu 18.04+ or equivalent (x64)
+        - **macOS**: macOS 10.15+ with Apple Silicon (M1/M2/M3) processors
+        - **Source**: Python 3.11+ (for source installation)
         
         ### Installation
-        Download the appropriate executable for your platform and run it directly.
+        1. Download the appropriate executable for your platform
+        2. Make it executable (Linux/macOS): \`chmod +x PDFUtilities-*\`
+        3. Run the executable directly
         
-        ### macOS Notes
-        - This build is optimized for Apple Silicon Macs (M1/M2/M3)
-        - Intel Mac users should use the source installation
-        - May require security permissions on first run (System Preferences > Security & Privacy)" \
+        ### Notes
+        - **macOS**: This build is optimized for Apple Silicon Macs (M1/M2/M3)
+        - **macOS**: Intel Mac users should use the source installation
+        - **macOS**: May require security permissions on first run (System Preferences > Security & Privacy)
+        - **Linux**: Tested on Ubuntu 20.04+, should work on most modern distributions
+        - **Windows**: No additional dependencies required" \
           --draft=false \
           --prerelease=false
         
@@ -346,8 +350,10 @@ jobs:
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
         echo "Uploading Windows executable for version: $VERSION"
-        gh release upload $VERSION ./windows-build/PDFUtilities.exe --clobber
-        echo "Windows executable uploaded successfully"
+        # Rename the Windows executable to include OS and architecture
+        cp ./windows-build/PDFUtilities.exe ./PDFUtilities-Windows-x64.exe
+        gh release upload $VERSION ./PDFUtilities-Windows-x64.exe --clobber
+        echo "Windows executable uploaded successfully as PDFUtilities-Windows-x64.exe"
         
     - name: Upload Linux executable
       env:
@@ -355,8 +361,10 @@ jobs:
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
         echo "Uploading Linux executable for version: $VERSION"
-        gh release upload $VERSION ./linux-build/PDFUtilities --clobber
-        echo "Linux executable uploaded successfully"
+        # Rename the Linux executable to include OS and architecture
+        cp ./linux-build/PDFUtilities ./PDFUtilities-Linux-x64
+        gh release upload $VERSION ./PDFUtilities-Linux-x64 --clobber
+        echo "Linux executable uploaded successfully as PDFUtilities-Linux-x64"
         
     - name: Upload macOS executable
       env:
@@ -364,8 +372,10 @@ jobs:
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
         echo "Uploading macOS executable for version: $VERSION"
-        gh release upload $VERSION ./macos-build/PDFUtilities --clobber
-        echo "macOS executable uploaded successfully"
+        # Rename the macOS executable to include OS and architecture
+        cp ./macos-build/PDFUtilities ./PDFUtilities-macOS-arm64
+        gh release upload $VERSION ./PDFUtilities-macOS-arm64 --clobber
+        echo "macOS executable uploaded successfully as PDFUtilities-macOS-arm64"
         
     - name: Upload source code
       env:
