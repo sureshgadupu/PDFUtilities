@@ -75,7 +75,7 @@ if sys.platform == "darwin":
     print("[SPEC DEBUG] Applying macOS-specific module exclusions")
     mac_excludes = [
         "QtBluetooth", "QtNfc", "QtSensors", "QtSerialPort", "QtTest",
-        "QtLocation", "QtQuick", "QtQml", "QtMultimedia", "QtNetwork"
+        "QtLocation", "QtQuick", "QtQml", "QtMultimedia", "QtConcurrent"
     ]
 
 # Basic Analysis
@@ -112,7 +112,7 @@ if sys.platform == 'darwin':
     
     frameworks_to_exclude = {
         'QtBluetooth', 'QtNfc', 'QtSensors', 'QtSerialPort', 'QtTest',
-        'QtLocation', 'QtQuick', 'QtQml', 'QtMultimedia'
+        'QtLocation', 'QtQuick', 'QtQml', 'QtMultimedia', 'QtConcurrent'
         # Note: QtNetwork is sometimes required for basic operations, so it's removed from this list.
         # If network functionality is truly not needed and causes issues, it can be added back.
     }
