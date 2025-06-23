@@ -71,6 +71,8 @@ print(f"[SPEC DEBUG] Total data files to include: {len(datas)}")
 
 # Platform-specific excludes
 mac_excludes = []
+linux_excludes = []
+
 if sys.platform == "darwin":
     print("[SPEC DEBUG] Applying macOS-specific module exclusions")
     mac_excludes = [
@@ -79,50 +81,42 @@ if sys.platform == "darwin":
     ]
 
 # Basic Analysis
-a = Analysis(
-    ['main.py'],
-    pathex=[],
-    binaries=binaries,
-    datas=datas,
-    hiddenimports=[
-        'PyQt6.sip',
-        'pdf2docx.main',
-        'fitz.fitz',
-        'PyQt6.QtSvg',
-        'PyQt6.QtGui',
-        'PyQt6.QtWidgets',
-        'PyQt6.QtCore',
-        'compressor',
-        'workers',
-        'converter',
-    ],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=mac_excludes,
-    noarchive=False,
-    optimize=0,
-)
+if sys.platform == "darwin":
+    a = Analysis(
+        ['main.py'],
+        pathex=[],
+        binaries=binaries,
+        datas=datas,
+        hiddenimports=[
+            'PyQt6.sip',
+            'pdf2docx.main',
+            'fitz.fitz',
+            'PyQt6.QtSvg',
+            'PyQt6.QtGui',
+            'PyQt6.QtWidgets',
+            'PyQt6.QtCore',
+            'compressor',
+            'workers',
+            'converter',
+        ],
+        hookspath=[],
+        hooksconfig={},
+        runtime_hooks=[],
+        excludes=mac_excludes,
+        noarchive=False,
+        optimize=0,
+    )
 
-# Manually filter out problematic Qt frameworks on macOS AFTER analysis.
-# This is the definitive fix for the recurring "FileExistsError" with Qt frameworks.
-# We must filter both a.binaries AND a.datas to remove all traces of the framework.
-if sys.platform == 'darwin':
+    # Manually filter out problematic Qt frameworks on macOS AFTER analysis.
     print('[SPEC DEBUG] Manually filtering unwanted Qt frameworks from ALL collected files.')
-    
     frameworks_to_exclude = {
         'QtBluetooth', 'QtNfc', 'QtSensors', 'QtSerialPort', 'QtTest',
         'QtLocation', 'QtQuick', 'QtQml', 'QtMultimedia', 'QtConcurrent'
-        # Note: QtNetwork is sometimes required for basic operations, so it's removed from this list.
-        # If network functionality is truly not needed and causes issues, it can be added back.
     }
-    
     def filter_qt_frameworks(collected_files, frameworks_to_exclude):
-        """Filters out files that are part of the specified Qt frameworks."""
         filtered_list = []
         excluded_count = 0
         for item_tuple in collected_files:
-            # The source path is the second element in the tuple (dest, source, type)
             source_path = item_tuple[1]
             if any(f'/{name}.framework/' in source_path for name in frameworks_to_exclude):
                 excluded_count += 1
@@ -130,7 +124,6 @@ if sys.platform == 'darwin':
                 filtered_list.append(item_tuple)
         return filtered_list, excluded_count
 
-    # Filter both binaries and data files
     print('[SPEC DEBUG] Filtering a.binaries...')
     a.binaries, bin_excluded_count = filter_qt_frameworks(a.binaries, frameworks_to_exclude)
     print(f'[SPEC DEBUG]   ...removed {bin_excluded_count} binary files.')
@@ -138,6 +131,32 @@ if sys.platform == 'darwin':
     print('[SPEC DEBUG] Filtering a.datas...')
     a.datas, data_excluded_count = filter_qt_frameworks(a.datas, frameworks_to_exclude)
     print(f'[SPEC DEBUG]   ...removed {data_excluded_count} data files.')
+
+elif sys.platform.startswith("linux"):
+    a = Analysis(
+        ['main.py'],
+        pathex=[],
+        binaries=binaries,
+        datas=datas,
+        hiddenimports=[
+            'PyQt6.sip',
+            'pdf2docx.main',
+            'fitz.fitz',
+            'PyQt6.QtSvg',
+            'PyQt6.QtGui',
+            'PyQt6.QtWidgets',
+            'PyQt6.QtCore',
+            'compressor',
+            'workers',
+            'converter',
+        ],
+        hookspath=[],
+        hooksconfig={},
+        runtime_hooks=[],
+        excludes=linux_excludes,
+        noarchive=False,
+        optimize=0,
+    )
 
 # Function to safely create symlinks by removing existing ones
 def safe_symlink(src, dest):
@@ -208,34 +227,27 @@ elif sys.platform == "darwin":
         upx_exclude=[],
         name=app_name,
     )
-else:
-    print(f"[SPEC DEBUG] Linux build ({sys.platform}) - creating directory structure")
+elif sys.platform.startswith("linux"):
+    print("[SPEC DEBUG] Linux build - creating single file executable")
     exe = EXE(
         pyz,
         a.scripts,
+        a.binaries,
+        a.datas,
         [],
-        exclude_binaries=True,
         name=app_name,
         debug=False,
         bootloader_ignore_signals=False,
-        strip=False,
+        strip=True,
         upx=True,
+        upx_exclude=[],
+        runtime_tmpdir=None,
         console=False,
         disable_windowed_traceback=False,
         argv_emulation=False,
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-    )
-    print("[SPEC DEBUG] Creating COLLECT for Linux directory structure")
-    coll = COLLECT(
-        exe,
-        a.binaries,
-        a.datas,
-        strip=False,
-        upx=True,
-        upx_exclude=[],
-        name=app_name,
     )
 
 sys.setrecursionlimit(sys.getrecursionlimit() * 5) 
