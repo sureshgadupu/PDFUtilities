@@ -93,20 +93,32 @@ jobs:
     - name: Build Linux executable
       run: |
         python build_app.py
+        echo "=== Build completed. Checking dist directory ==="
+        ls -la dist/ || echo "dist directory not found"
+        echo "=== Looking for any PDFUtilities files ==="
+        find . -name "*PDFUtilities*" -type f || echo "No PDFUtilities files found"
         
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4
       with:
         name: PDFUtilities-Linux
-        path: dist/PDFUtilities
+        path: dist/PDFUtilities*
         retention-days: 30
+        if-no-files-found: warn
         
     - name: Create release assets
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         mkdir -p release-assets
-        if [ -d "dist/PDFUtilities" ]; then
+        if [ -f "dist/PDFUtilities" ]; then
+          cp dist/PDFUtilities release-assets/PDFUtilities-Linux
+          echo "Copied single file executable"
+        elif [ -d "dist/PDFUtilities" ]; then
           cp -r dist/PDFUtilities release-assets/PDFUtilities-Linux
+          echo "Copied directory structure"
+        else
+          echo "No PDFUtilities found in dist/"
+          ls -la dist/ || echo "dist directory not found"
         fi
         
     - name: Upload release assets
@@ -159,13 +171,18 @@ jobs:
         export PYTHONPATH=$PWD:$PYTHONPATH
         # Build with additional PyInstaller options for macOS
         python build_app.py
+        echo "=== Build completed. Checking dist directory ==="
+        ls -la dist/ || echo "dist directory not found"
+        echo "=== Looking for any PDFUtilities files ==="
+        find . -name "*PDFUtilities*" || echo "No PDFUtilities files found"
         
     - name: Upload macOS artifact
       uses: actions/upload-artifact@v4
       with:
         name: PDFUtilities-macOS
-        path: dist/PDFUtilities
+        path: dist/PDFUtilities*
         retention-days: 30
+        if-no-files-found: warn
         
     - name: Create release assets
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -173,6 +190,13 @@ jobs:
         mkdir -p release-assets
         if [ -d "dist/PDFUtilities" ]; then
           cp -r dist/PDFUtilities release-assets/PDFUtilities-macOS
+          echo "Copied directory structure"
+        elif [ -f "dist/PDFUtilities" ]; then
+          cp dist/PDFUtilities release-assets/PDFUtilities-macOS
+          echo "Copied single file executable"
+        else
+          echo "No PDFUtilities found in dist/"
+          ls -la dist/ || echo "dist directory not found"
         fi
         
     - name: Upload release assets
