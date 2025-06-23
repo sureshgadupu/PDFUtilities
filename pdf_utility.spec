@@ -199,12 +199,13 @@ if sys.platform == "win32":
         icon='gui/icons/image.ico'
     )
 elif sys.platform == "darwin":
-    print("[SPEC DEBUG] macOS build - creating directory structure with macOS-specific settings")
+    print("[SPEC DEBUG] macOS build - creating single file executable")
     exe = EXE(
         pyz,
         a.scripts,
+        a.binaries,
+        a.datas,
         [],
-        exclude_binaries=True,
         name=app_name,
         debug=False,
         bootloader_ignore_signals=False,
