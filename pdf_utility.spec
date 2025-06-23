@@ -139,6 +139,18 @@ if sys.platform == 'darwin':
     a.datas, data_excluded_count = filter_qt_frameworks(a.datas, frameworks_to_exclude)
     print(f'[SPEC DEBUG]   ...removed {data_excluded_count} data files.')
 
+# Function to safely create symlinks by removing existing ones
+def safe_symlink(src, dest):
+    try:
+        if os.path.islink(dest) or os.path.exists(dest):
+            os.remove(dest)
+        os.symlink(src, dest)
+    except OSError as e:
+        print(f"[SPEC DEBUG] Error creating symlink: {e}")
+
+# Override the default os.symlink with our safe_symlink
+os.symlink = safe_symlink
+
 pyz = PYZ(a.pure)
 
 # Create EXE with platform-specific options
