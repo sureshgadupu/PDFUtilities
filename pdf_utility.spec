@@ -132,7 +132,7 @@ if sys.platform == "darwin":
     a.datas, data_excluded_count = filter_qt_frameworks(a.datas, frameworks_to_exclude)
     print(f'[SPEC DEBUG]   ...removed {data_excluded_count} data files.')
 
-elif sys.platform.startswith("linux"):
+else:
     a = Analysis(
         ['main.py'],
         pathex=[],
@@ -153,7 +153,7 @@ elif sys.platform.startswith("linux"):
         hookspath=[],
         hooksconfig={},
         runtime_hooks=[],
-        excludes=linux_excludes,
+        excludes=[],
         noarchive=False,
         optimize=0,
     )
@@ -217,37 +217,16 @@ elif sys.platform == "darwin":
         codesign_identity=None,
         entitlements_file=None,
     )
-    print("[SPEC DEBUG] Creating COLLECT for macOS with framework handling")
+else:
+    print(f"[SPEC DEBUG] Linux build ({sys.platform}) - creating directory structure")
     coll = COLLECT(
         exe,
         a.binaries,
         a.datas,
         strip=False,
-        upx=False,  # Disable UPX on macOS
-        upx_exclude=[],
-        name=app_name,
-    )
-elif sys.platform.startswith("linux"):
-    print("[SPEC DEBUG] Linux build - creating single file executable")
-    exe = EXE(
-        pyz,
-        a.scripts,
-        a.binaries,
-        a.datas,
-        [],
-        name=app_name,
-        debug=False,
-        bootloader_ignore_signals=False,
-        strip=True,
         upx=True,
         upx_exclude=[],
-        runtime_tmpdir=None,
-        console=False,
-        disable_windowed_traceback=False,
-        argv_emulation=False,
-        target_arch=None,
-        codesign_identity=None,
-        entitlements_file=None,
+        name=app_name,
     )
 
 sys.setrecursionlimit(sys.getrecursionlimit() * 5) 
