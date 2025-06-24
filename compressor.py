@@ -178,103 +178,61 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
 
 
 def get_bundled_ghostscript_path():
-    """Get the path to the bundled Ghostscript executable."""
-    if getattr(sys, "frozen", False):
-        # Running as compiled executable
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        if hasattr(sys, "_MEIPASS"):
-            # One-file mode: files are extracted to a temporary directory
-            base_path = sys._MEIPASS
-            print(f"[DEBUG] Running as frozen executable (one-file), temp path: {base_path}")
-        else:
-            # One-directory mode: files are in the same directory as the executable
-            base_path = os.path.dirname(sys.executable)
-            print(f"[DEBUG] Running as frozen executable (one-dir), base path: {base_path}")
-    else:
-        # Running as script
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        print(f"[DEBUG] Running as script, base path: {base_path}")
-
-    print(f"[DEBUG] Base path: {base_path}")
-
-    # Check in platform-specific Ghostscript directory
+    """Get the path to the bundled Ghostscript executable (Windows only)."""
     if os.name == "nt":
-        # Windows version
-        gs_dir = os.path.join(base_path, "bin", "Ghostscript", "Windows")
-        print(f"[DEBUG] Looking for Ghostscript in: {gs_dir}")
-        print(f"[DEBUG] Directory exists: {os.path.exists(gs_dir)}")
-
-        if os.path.exists(gs_dir):
-            print(f"[DEBUG] Directory contents: {os.listdir(gs_dir)}")
+        if getattr(sys, "frozen", False):
+            # Running as compiled executable
+            if hasattr(sys, "_MEIPASS"):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(sys.executable)
         else:
-            # If not found, list what's actually in the base path
-            print(
-                f"[DEBUG] Base path contents: {os.listdir(base_path) if os.path.exists(base_path) else 'Base path does not exist'}"
-            )
-
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        gs_dir = os.path.join(base_path, "bin", "Ghostscript", "Windows")
         # Try 64-bit, then 32-bit
         gs_exe = os.path.join(gs_dir, "gswin64c.exe")
-        print(f"[DEBUG] Checking for 64-bit version: {gs_exe}")
-        print(f"[DEBUG] 64-bit exists: {os.path.exists(gs_exe)}")
-
         if not os.path.exists(gs_exe):
-            print(f"[DEBUG] 64-bit version not found, checking 32-bit")
             gs_exe = os.path.join(gs_dir, "gswin32c.exe")
-            print(f"[DEBUG] Checking for 32-bit version: {gs_exe}")
-            print(f"[DEBUG] 32-bit exists: {os.path.exists(gs_exe)}")
-    else:
-        # Linux version
-        gs_dir = os.path.join(base_path, "bin", "Ghostscript", "Linux")
-        print(f"[DEBUG] Looking for Ghostscript in: {gs_dir}")
-        print(f"[DEBUG] Directory exists: {os.path.exists(gs_dir)}")
-
-        if os.path.exists(gs_dir):
-            print(f"[DEBUG] Directory contents: {os.listdir(gs_dir)}")
-        else:
-            # If not found, list what's actually in the base path
-            print(
-                f"[DEBUG] Base path contents: {os.listdir(base_path) if os.path.exists(base_path) else 'Base path does not exist'}"
-            )
-
-        gs_exe = os.path.join(gs_dir, "gs")
-        print(f"[DEBUG] Checking for Linux version: {gs_exe}")
-        print(f"[DEBUG] Linux version exists: {os.path.exists(gs_exe)}")
-
-    if os.path.exists(gs_exe):
-        print(f"[DEBUG] Found Ghostscript at: {gs_exe}")
-        # Check if it's executable
-        if os.access(gs_exe, os.X_OK):
-            print(f"[DEBUG] Ghostscript is executable")
-        else:
-            print(f"[DEBUG] Warning: Ghostscript exists but is not executable")
-    else:
-        print(f"[DEBUG] Ghostscript not found at: {gs_exe}")
-
-    return gs_exe if os.path.exists(gs_exe) else None
+        if os.path.exists(gs_exe) and os.access(gs_exe, os.X_OK):
+            return gs_exe
+    return None
 
 
 def is_ghostscript_available():
-    """Check if Ghostscript is available in the bin directory."""
-    return get_bundled_ghostscript_path() is not None
+    """Check if Ghostscript is available (bundled on Windows, system on Linux/macOS)."""
+    if os.name == "nt":
+        return get_bundled_ghostscript_path() is not None or shutil.which("gswin64c") or shutil.which("gswin32c")
+    else:
+        return shutil.which("gs") is not None
 
 
 def get_ghostscript_cmd():
-    """Get the Ghostscript command to use from bin directory."""
-    gs_path = get_bundled_ghostscript_path()
-    if gs_path:
-        return gs_path
-
-    # Fallback to system PATH if not found in bin
+    """Get the Ghostscript command to use."""
     if os.name == "nt":
+        gs_path = get_bundled_ghostscript_path()
+        if gs_path:
+            return gs_path
         return shutil.which("gswin64c") or shutil.which("gswin32c") or "gswin64c"
     else:
-        return shutil.which("gs") or "gs"
+        gs_path = shutil.which("gs")
+        if gs_path:
+            return gs_path
+        return "gs"  # fallback, will error if not installed
 
 
 def ghostscript_compress(input_path, output_path, quality="medium", image_quality=None, custom_dpi=None):
     """Compress PDF using Ghostscript with specified quality settings."""
     if not is_ghostscript_available():
-        raise Exception("Ghostscript is not available. Please install it first.")
+        if os.name == "nt":
+            raise Exception("Ghostscript is not available. Please install it or ensure it is in your PATH.")
+        else:
+            raise Exception(
+                "Ghostscript is not installed or not in PATH. Please install it using your package manager:\n"
+                "- Ubuntu/Debian: sudo apt install ghostscript\n"
+                "- Fedora: sudo dnf install ghostscript\n"
+                "- Arch: sudo pacman -S ghostscript\n"
+                "- openSUSE: sudo zypper install ghostscript"
+            )
 
     # Define quality settings
     quality_settings = {"low": ("/screen", 72), "medium": ("/ebook", 150), "high": ("/printer", 300)}
@@ -329,7 +287,21 @@ def compress_multiple_pdfs(
     print(f"[DEBUG] Compression mode: {compression_mode}, Target size: {target_size_kb} KB")
 
     if not is_ghostscript_available():
-        msg = "Ghostscript is not installed or not in PATH. Please install Ghostscript."
+        if os.name == "nt":
+            msg = "Ghostscript is not installed or not in PATH. Please install Ghostscript."
+        elif sys.platform == "darwin":
+            msg = (
+                "Ghostscript is not installed or not in PATH. Please install it using Homebrew:\n"
+                "- macOS: brew install ghostscript"
+            )
+        else:
+            msg = (
+                "Ghostscript is not installed or not in PATH. Please install it using your package manager:\n"
+                "- Ubuntu/Debian: sudo apt install ghostscript\n"
+                "- Fedora: sudo dnf install ghostscript\n"
+                "- Arch: sudo pacman -S ghostscript\n"
+                "- openSUSE: sudo zypper install ghostscript"
+            )
         print(f"[ERROR] {msg}")
         if status_callback:
             status_callback(msg)

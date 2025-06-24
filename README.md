@@ -47,7 +47,30 @@ python main.py
 
 - Python 3.11+
 - Git
-- **macOS**: Homebrew (for system dependencies)
+- **Linux:** Ghostscript must be installed system-wide. See instructions below.
+- **macOS:** Homebrew (for system dependencies)
+
+#### Install Ghostscript on Linux
+
+Ghostscript is required for PDF compression. Please install it using your distribution's package manager:
+
+- **Ubuntu/Debian:**
+  ```bash
+  sudo apt update
+  sudo apt install ghostscript
+  ```
+- **Fedora:**
+  ```bash
+  sudo dnf install ghostscript
+  ```
+- **Arch Linux:**
+  ```bash
+  sudo pacman -S ghostscript
+  ```
+- **openSUSE:**
+  ```bash
+  sudo zypper install ghostscript
+  ```
 
 ### Installation
 
@@ -150,7 +173,7 @@ This project uses GitHub Actions for automated builds and releases:
 - **PyMuPDF (fitz)**: PDF processing and manipulation
 - **pdf2docx**: PDF to DOCX conversion
 - **Pillow**: Image processing
-- **Ghostscript**: PDF compression (bundled)
+- **Ghostscript**: PDF compression (**must be installed system-wide on Linux**)
 
 ### Development Dependencies
 
