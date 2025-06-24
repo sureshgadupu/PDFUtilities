@@ -160,7 +160,7 @@ jobs:
   #         retention-days: 30
   #         if-no-files-found: warn
 
-  build-macos:
+  build-macos-arm:
     runs-on: macos-latest
     
     steps:
@@ -207,10 +207,10 @@ jobs:
         echo "=== Looking for any PDFUtilities files ==="
         find . -name "*PDFUtilities*" || echo "No PDFUtilities files found"
         
-    - name: Upload macOS artifact
+    - name: Upload macOS ARM artifact
       uses: actions/upload-artifact@v4
       with:
-        name: PDFUtilities-macOS
+        name: PDFUtilities-macOS-arm64
         path: dist/PDFUtilities*
         retention-days: 30
         if-no-files-found: warn
@@ -220,10 +220,10 @@ jobs:
       run: |
         mkdir -p release-assets
         if [ -d "dist/PDFUtilities" ]; then
-          cp -r dist/PDFUtilities release-assets/PDFUtilities-macOS
+          cp -r dist/PDFUtilities release-assets/PDFUtilities-macOS-arm64
           echo "Copied directory structure"
         elif [ -f "dist/PDFUtilities" ]; then
-          cp dist/PDFUtilities release-assets/PDFUtilities-macOS
+          cp dist/PDFUtilities release-assets/PDFUtilities-macOS-arm64
           echo "Copied single file executable"
         else
           echo "No PDFUtilities found in dist/"
@@ -234,7 +234,90 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v4
       with:
-        name: release-assets-macos
+        name: release-assets-macos-arm64
+        path: release-assets/
+        retention-days: 90
+
+  build-macos-intel:
+    runs-on: macos-13  # Intel-based runner
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install system dependencies
+      run: |
+        # Install Homebrew if not already available
+        if ! command -v brew &> /dev/null; then
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+        
+        # Install required system libraries
+        brew install libpng jpeg zlib
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build macOS Intel executable
+      run: |
+        # Set environment variables to help with macOS build
+        export PYTHONPATH=$PWD:$PYTHONPATH
+        echo "Building macOS Intel executable..."
+        echo "Current directory: $(pwd)"
+        echo "Python version: $(python --version)"
+        echo "Architecture: $(uname -m)"
+        
+        # Build with additional PyInstaller options for macOS
+        python build_app.py
+        echo "=== Build completed. Checking dist directory ==="
+        ls -la dist/ || echo "dist directory not found"
+        echo "=== Looking for any PDFUtilities files ==="
+        find . -name "*PDFUtilities*" || echo "No PDFUtilities files found"
+        
+    - name: Upload macOS Intel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-x64
+        path: dist/PDFUtilities*
+        retention-days: 30
+        if-no-files-found: warn
+        
+    - name: Create release assets
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        mkdir -p release-assets
+        if [ -d "dist/PDFUtilities" ]; then
+          cp -r dist/PDFUtilities release-assets/PDFUtilities-macOS-x64
+          echo "Copied directory structure"
+        elif [ -f "dist/PDFUtilities" ]; then
+          cp dist/PDFUtilities release-assets/PDFUtilities-macOS-x64
+          echo "Copied single file executable"
+        else
+          echo "No PDFUtilities found in dist/"
+          ls -la dist/ || echo "dist directory not found"
+        fi
+        
+    - name: Upload release assets
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-assets-macos-x64
         path: release-assets/
         retention-days: 90
 

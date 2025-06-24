@@ -124,7 +124,7 @@ jobs:
   #         retention-days: 30
   #         if-no-files-found: warn
 
-  build-macos:
+  build-macos-arm:
     runs-on: macos-latest
     
     steps:
@@ -224,16 +224,124 @@ jobs:
           exit 1
         fi
         
-    - name: Upload macOS artifact
+    - name: Upload macOS ARM artifact
       uses: actions/upload-artifact@v4
       with:
-        name: PDFUtilities-macOS
+        name: PDFUtilities-macOS-arm64
+        path: dist/PDFUtilities
+        retention-days: 30
+      if: always() && hashFiles('dist/PDFUtilities/**') != ''
+
+  build-macos-intel:
+    runs-on: macos-13  # Intel-based runner
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install system dependencies
+      run: |
+        # Install Homebrew if not already available
+        if ! command -v brew &> /dev/null; then
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+        
+        # Install required system libraries
+        brew install libpng jpeg zlib
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build macOS Intel executable
+      run: |
+        echo "Building macOS Intel executable..."
+        echo "Current directory: $(pwd)"
+        echo "Python version: $(python --version)"
+        echo "Architecture: $(uname -m)"
+        
+        # Check if spec file exists
+        if [ ! -f "pdf_utility.spec" ]; then
+          echo "❌ Error: pdf_utility.spec not found!"
+          echo "Available files:"
+          ls -la
+          exit 1
+        fi
+        
+        echo "✅ pdf_utility.spec found"
+        
+        # Run the standard build script
+        echo "Running build_app.py..."
+        python build_app.py
+        
+        # Check build result
+        BUILD_EXIT_CODE=$?
+        echo "Build exit code: $BUILD_EXIT_CODE"
+        
+        if [ $BUILD_EXIT_CODE -ne 0 ]; then
+          echo "❌ Build failed with exit code: $BUILD_EXIT_CODE"
+          echo "Contents of current directory:"
+          ls -la
+          if [ -d "build" ]; then
+            echo "Contents of build directory:"
+            ls -la build/
+          fi
+          if [ -d "dist" ]; then
+            echo "Contents of dist directory:"
+            ls -la dist/
+          fi
+          exit 1
+        fi
+        
+        echo "✅ macOS Intel build completed successfully"
+        
+    - name: Verify macOS Intel build
+      run: |
+        echo "Verifying macOS Intel build..."
+        echo "Contents of current directory:"
+        ls -la
+        
+        if [ -d "dist" ]; then
+          echo "Contents of dist directory:"
+          ls -la dist/
+        else
+          echo "❌ dist directory not found"
+          exit 1
+        fi
+        
+        if [ -f "dist/PDFUtilities" ]; then
+          echo "✅ macOS Intel executable file found"
+          echo "File information:"
+          file dist/PDFUtilities
+          echo "Architecture information:"
+          lipo -info dist/PDFUtilities || echo "lipo info not available"
+          echo "File size:"
+          ls -lh dist/PDFUtilities
+          echo "✅ macOS Intel build verification complete"
+        else
+          echo "❌ macOS Intel executable file not found"
+          echo "Available items in dist:"
+          ls -la dist/
+          exit 1
+        fi
+        
+    - name: Upload macOS Intel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-macOS-x64
         path: dist/PDFUtilities
         retention-days: 30
       if: always() && hashFiles('dist/PDFUtilities/**') != ''
 
   create-release:
-    needs: [build-windows, build-linux, build-macos]
+    needs: [build-windows, build-linux, build-macos-arm, build-macos-intel]
     runs-on: ubuntu-latest
     
     steps:
@@ -260,11 +368,18 @@ jobs:
     #     name: PDFUtilities-Linux-arm64
     #     path: ./linux-arm-build
         
-    - name: Download macOS artifact
+    - name: Download macOS ARM artifact
       uses: actions/download-artifact@v4
       with:
-        name: PDFUtilities-macOS
-        path: ./macos-build
+        name: PDFUtilities-macOS-arm64
+        path: ./macos-arm-build
+      continue-on-error: true
+        
+    - name: Download macOS Intel artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: PDFUtilities-macOS-x64
+        path: ./macos-intel-build
       continue-on-error: true
         
     - name: Verify artifacts
@@ -323,27 +438,53 @@ jobs:
         #   exit 1
         # fi
         
-        # Check macOS (should be a single executable file)
-        if [ -d "./macos-build" ]; then
-          echo "✅ macOS build directory found"
-          echo "Contents of macos-build:"
-          ls -la ./macos-build/
+        # Check macOS ARM (should be a single executable file)
+        if [ -d "./macos-arm-build" ]; then
+          echo "✅ macOS ARM build directory found"
+          echo "Contents of macos-arm-build:"
+          ls -la ./macos-arm-build/
           
-          if [ -f "./macos-build/PDFUtilities" ]; then
-            echo "✅ macOS executable found"
+          if [ -f "./macos-arm-build/PDFUtilities" ]; then
+            echo "✅ macOS ARM executable found"
             echo "File information:"
-            file ./macos-build/PDFUtilities
+            file ./macos-arm-build/PDFUtilities
             echo "Architecture information:"
-            lipo -info ./macos-build/PDFUtilities || echo "lipo info not available"
-            echo "✅ macOS build verified"
+            lipo -info ./macos-arm-build/PDFUtilities || echo "lipo info not available"
+            echo "✅ macOS ARM build verified"
           else
-            echo "❌ PDFUtilities executable not found in macos-build directory"
+            echo "❌ PDFUtilities executable not found in macos-arm-build directory"
             echo "Available files:"
-            ls -la ./macos-build/
+            ls -la ./macos-arm-build/
             exit 1
           fi
         else
-          echo "❌ macOS build directory not found"
+          echo "❌ macOS ARM build directory not found"
+          echo "Available directories:"
+          ls -la ./
+          exit 1
+        fi
+        
+        # Check macOS Intel (should be a single executable file)
+        if [ -d "./macos-intel-build" ]; then
+          echo "✅ macOS Intel build directory found"
+          echo "Contents of macos-intel-build:"
+          ls -la ./macos-intel-build/
+          
+          if [ -f "./macos-intel-build/PDFUtilities" ]; then
+            echo "✅ macOS Intel executable found"
+            echo "File information:"
+            file ./macos-intel-build/PDFUtilities
+            echo "Architecture information:"
+            lipo -info ./macos-intel-build/PDFUtilities || echo "lipo info not available"
+            echo "✅ macOS Intel build verified"
+          else
+            echo "❌ PDFUtilities executable not found in macos-intel-build directory"
+            echo "Available files:"
+            ls -la ./macos-intel-build/
+            exit 1
+          fi
+        else
+          echo "❌ macOS Intel build directory not found"
           echo "Available directories:"
           ls -la ./
           exit 1
@@ -382,13 +523,14 @@ jobs:
         ### Downloads
         - **Windows (x64)**: PDFUtilities-Windows-x64.exe
         - **Linux (x64)**: PDFUtilities-Linux-x64
-        - **macOS (Apple Silicon)**: PDFUtilities-macOS-arm64
+        - **macOS (Apple Silicon/ARM64)**: PDFUtilities-macOS-arm64
+        - **macOS (Intel/x64)**: PDFUtilities-macOS-x64
         - **Source code**: PDFUtilities-Source.zip
         
         ### System Requirements
         - **Windows**: Windows 10+ (x64)
         - **Linux**: Ubuntu 18.04+ or equivalent (x64)
-        - **macOS**: macOS 10.15+ with Apple Silicon (M1/M2/M3) processors
+        - **macOS**: macOS 10.15+ (both Intel and Apple Silicon processors supported)
         - **Source**: Python 3.11+ (for source installation)
         
         ### Installation
@@ -397,8 +539,7 @@ jobs:
         3. Run the executable directly
         
         ### Notes
-        - **macOS**: This build is optimized for Apple Silicon Macs (M1/M2/M3)
-        - **macOS**: Intel Mac users should use the source installation
+        - **macOS**: Choose the appropriate build for your Mac processor (Intel x64 or Apple Silicon ARM64)
         - **macOS**: May require security permissions on first run (System Preferences > Security & Privacy)
         - **Linux**: Tested on Ubuntu 20.04+, should work on most modern distributions
         - **Windows**: No additional dependencies required" \
@@ -439,16 +580,27 @@ jobs:
     #     gh release upload $VERSION ./PDFUtilities-Linux-arm64 --clobber
     #     echo "Linux ARM executable uploaded successfully as PDFUtilities-Linux-arm64"
         
-    - name: Upload macOS executable
+    - name: Upload macOS ARM executable
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
-        echo "Uploading macOS executable for version: $VERSION"
-        # Rename the macOS executable to include OS and architecture
-        cp ./macos-build/PDFUtilities ./PDFUtilities-macOS-arm64
+        echo "Uploading macOS ARM executable for version: $VERSION"
+        # Rename the macOS ARM executable to include OS and architecture
+        cp ./macos-arm-build/PDFUtilities ./PDFUtilities-macOS-arm64
         gh release upload $VERSION ./PDFUtilities-macOS-arm64 --clobber
-        echo "macOS executable uploaded successfully as PDFUtilities-macOS-arm64"
+        echo "macOS ARM executable uploaded successfully as PDFUtilities-macOS-arm64"
+        
+    - name: Upload macOS Intel executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "Uploading macOS Intel executable for version: $VERSION"
+        # Rename the macOS Intel executable to include OS and architecture
+        cp ./macos-intel-build/PDFUtilities ./PDFUtilities-macOS-x64
+        gh release upload $VERSION ./PDFUtilities-macOS-x64 --clobber
+        echo "macOS Intel executable uploaded successfully as PDFUtilities-macOS-x64"
         
     - name: Upload source code
       env:
