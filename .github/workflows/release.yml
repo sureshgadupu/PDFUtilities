@@ -93,6 +93,44 @@ jobs:
         path: dist/PDFUtilities
         retention-days: 30
 
+  build-linux-arm:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: arm64
+    - name: Set up Python (ARM64)
+      uses: deadsnakes/action@v2.1.1
+      with:
+        python-version: '3.11'
+        architecture: 'aarch64'
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1 libglib2.0-0 libx11-6 libxext6 libxrender1 libxtst6 libxi6 libegl1 libegl-mesa0
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    - name: Build Linux ARM executable
+      run: |
+        python build_app.py
+        echo "=== Build completed. Checking dist directory ==="
+        ls -la dist/ || echo "dist directory not found"
+        echo "=== Looking for any PDFUtilities files ==="
+        find . -name "*PDFUtilities*" -type f || echo "No PDFUtilities files found"
+    - name: Upload Linux ARM artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-Linux-arm64
+        path: dist/PDFUtilities*
+        retention-days: 30
+        if-no-files-found: warn
+
   build-macos:
     runs-on: macos-latest
     
@@ -202,7 +240,7 @@ jobs:
       if: always() && hashFiles('dist/PDFUtilities/**') != ''
 
   create-release:
-    needs: [build-windows, build-linux, build-macos]
+    needs: [build-windows, build-linux, build-linux-arm, build-macos]
     runs-on: ubuntu-latest
     
     steps:
@@ -222,6 +260,12 @@ jobs:
       with:
         name: PDFUtilities-Linux
         path: ./linux-build
+        
+    - name: Download Linux ARM artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: PDFUtilities-Linux-arm64
+        path: ./linux-arm-build
         
     - name: Download macOS artifact
       uses: actions/download-artifact@v4
@@ -257,6 +301,32 @@ jobs:
           echo "✅ Linux build verified"
         else
           echo "❌ Linux build directory not found"
+          exit 1
+        fi
+        
+        # Check Linux ARM
+        if [ -d "./linux-arm-build" ]; then
+          echo "✅ Linux ARM build directory found"
+          echo "Contents of linux-arm-build:"
+          ls -la ./linux-arm-build/
+          
+          if [ -f "./linux-arm-build/PDFUtilities" ]; then
+            echo "✅ Linux ARM executable found"
+            echo "File information:"
+            file ./linux-arm-build/PDFUtilities
+            echo "Architecture information:"
+            lipo -info ./linux-arm-build/PDFUtilities || echo "lipo info not available"
+            echo "✅ Linux ARM build verified"
+          else
+            echo "❌ PDFUtilities executable not found in linux-arm-build directory"
+            echo "Available files:"
+            ls -la ./linux-arm-build/
+            exit 1
+          fi
+        else
+          echo "❌ Linux ARM build directory not found"
+          echo "Available directories:"
+          ls -la ./
           exit 1
         fi
         
@@ -319,12 +389,14 @@ jobs:
         ### Downloads
         - **Windows (x64)**: PDFUtilities-Windows-x64.exe
         - **Linux (x64)**: PDFUtilities-Linux-x64
+        - **Linux (ARM64)**: PDFUtilities-Linux-arm64
         - **macOS (Apple Silicon)**: PDFUtilities-macOS-arm64
         - **Source code**: PDFUtilities-Source.zip
         
         ### System Requirements
         - **Windows**: Windows 10+ (x64)
         - **Linux**: Ubuntu 18.04+ or equivalent (x64)
+        - **Linux**: Ubuntu 18.04+ with ARM64 (for ARM builds)
         - **macOS**: macOS 10.15+ with Apple Silicon (M1/M2/M3) processors
         - **Source**: Python 3.11+ (for source installation)
         
@@ -338,6 +410,7 @@ jobs:
         - **macOS**: Intel Mac users should use the source installation
         - **macOS**: May require security permissions on first run (System Preferences > Security & Privacy)
         - **Linux**: Tested on Ubuntu 20.04+, should work on most modern distributions
+        - **Linux**: Tested on Ubuntu 18.04+ with ARM64 (for ARM builds)
         - **Windows**: No additional dependencies required" \
           --draft=false \
           --prerelease=false
@@ -365,6 +438,16 @@ jobs:
         cp ./linux-build/PDFUtilities ./PDFUtilities-Linux-x64
         gh release upload $VERSION ./PDFUtilities-Linux-x64 --clobber
         echo "Linux executable uploaded successfully as PDFUtilities-Linux-x64"
+        
+    - name: Upload Linux ARM executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "Uploading Linux ARM executable for version: $VERSION"
+        cp ./linux-arm-build/PDFUtilities ./PDFUtilities-Linux-arm64
+        gh release upload $VERSION ./PDFUtilities-Linux-arm64 --clobber
+        echo "Linux ARM executable uploaded successfully as PDFUtilities-Linux-arm64"
         
     - name: Upload macOS executable
       env:
