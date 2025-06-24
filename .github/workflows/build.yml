@@ -129,36 +129,36 @@ jobs:
         path: release-assets/
         retention-days: 90
 
-  build-linux-arm:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-      - name: Build ARM64 binary in Docker
-        run: |
-          docker run --rm --platform linux/arm64 \
-            -v ${{ github.workspace }}:/workspace \
-            -w /workspace \
-            arm64v8/python:3.11 \
-            /bin/bash -c "\
-              apt-get update && \
-              apt-get install -y libgl1 libglib2.0-0 libx11-6 libxext6 libxrender1 libxtst6 libxi6 libegl1 libegl-mesa0 && \
-              pip install --upgrade pip && \
-              pip install -r requirements.txt && \
-              pip install pyinstaller && \
-              python build_app.py\
-            "
-      - name: Upload Linux ARM artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: PDFUtilities-Linux-arm64
-          path: dist/PDFUtilities*
-          retention-days: 30
-          if-no-files-found: warn
+  # build-linux-arm:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+  #       with:
+  #         platforms: arm64
+  #     - name: Build ARM64 binary in Docker
+  #       run: |
+  #         docker run --rm --platform linux/arm64 \
+  #           -v ${{ github.workspace }}:/workspace \
+  #           -w /workspace \
+  #           arm64v8/python:3.11 \
+  #           /bin/bash -c "\
+  #             apt-get update && \
+  #             apt-get install -y libgl1 libglib2.0-0 libx11-6 libxext6 libxrender1 libxtst6 libxi6 libegl1 libegl-mesa0 && \
+  #             pip install --upgrade pip && \
+  #             pip install -r requirements.txt && \
+  #             pip install pyinstaller && \
+  #             python build_app.py\
+  #           "
+  #     - name: Upload Linux ARM artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: PDFUtilities-Linux-arm64
+  #         path: dist/PDFUtilities*
+  #         retention-days: 30
+  #         if-no-files-found: warn
 
   build-macos:
     runs-on: macos-latest
