@@ -246,6 +246,9 @@ class PDFConverterApp(QMainWindow):
         self.convert_to_image_tab.start_btn.clicked.connect(self._start_convert_to_image)
 
         self.tabs_initialized = True
+        
+        # Set the first tab (Convert to DOCX) as the default active tab
+        self.tab_widget.setCurrentIndex(0)
 
     def _check_ghostscript(self):
         """Check for Ghostscript availability (non-blocking)"""

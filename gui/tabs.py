@@ -121,8 +121,9 @@ class CompressTab(BaseTab):
         level_label.setStyleSheet("color: #000;")
         self.level_combo = QComboBox()
         self.level_combo.setStyleSheet("color: #000;")
-        self.level_combo.addItems(["High", "Medium", "Low"])
-        self.level_combo.setCurrentText("Medium")
+        self.level_combo.addItems(["Smallest (Low Quality)", "Balanced (Medium Quality)", "Largest (High Quality)"])
+        self.level_combo.setCurrentText("Balanced (Medium Quality)")
+        self.level_combo.setToolTip("Smallest: Maximum compression, smallest file size, lowest quality\nBalanced: Medium compression and quality\nLargest: Minimum compression, largest file size, highest quality")
         level_layout.addWidget(level_label)
         level_layout.addWidget(self.level_combo)
         level_layout.addStretch()
@@ -180,7 +181,13 @@ class CompressTab(BaseTab):
             return
 
         # Get compression settings
-        compression_mode = self.level_combo.currentText().lower()
+        compression_level = self.level_combo.currentText()
+        if compression_level == "Smallest (Low Quality)":
+            compression_mode = "low"  # /screen
+        elif compression_level == "Balanced (Medium Quality)":
+            compression_mode = "medium"  # /ebook
+        else:  # "Largest (High Quality)"
+            compression_mode = "high"  # /printer
 
         # Get target size if specified
         target_size_kb = None
