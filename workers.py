@@ -1,11 +1,6 @@
-import io
 import os
-import shutil
-import sys
-import tempfile
 
 import fitz  # PyMuPDF
-from pdf2docx import Converter
 from PIL import Image
 from PyQt6.QtCore import QThread, pyqtSignal
 
