@@ -41,6 +41,12 @@ PDFUtilities.exe
 python main.py
 ```
 
+## 🖥️ Minimum Supported OS Versions
+
+- **Windows:** Windows 10 or newer
+- **Linux:** Ubuntu 22.04 or newer, Fedora 40 or newer, Arch Linux 2024.05.01 or newer
+- **macOS:** macOS 12 (Monterey) or newer (both Intel and Apple Silicon)
+
 ## 🛠️ Development Setup
 
 ### Prerequisites
