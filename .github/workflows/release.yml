@@ -49,6 +49,99 @@ jobs:
         path: dist/PDFUtilities.exe
         retention-days: 30
 
+  build-windows-arm:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build Windows ARM64 executable
+      run: |
+        echo "Building Windows ARM64 executable..."
+        echo "Current directory: $(pwd)"
+        echo "Python version: $(python --version)"
+        echo "Architecture: $(python -c 'import platform; print(platform.machine())')"
+        
+        # Check if spec file exists
+        if (!(Test-Path "pdf_utility.spec")) {
+          Write-Error "pdf_utility.spec not found!"
+          Get-ChildItem
+          exit 1
+        }
+        
+        Write-Host "pdf_utility.spec found"
+        
+        # Run the standard build script
+        Write-Host "Running build_app.py..."
+        python build_app.py
+        
+        # Check build result
+        $BUILD_EXIT_CODE = $LASTEXITCODE
+        Write-Host "Build exit code: $BUILD_EXIT_CODE"
+        
+        if ($BUILD_EXIT_CODE -ne 0) {
+          Write-Error "Build failed with exit code: $BUILD_EXIT_CODE"
+          Write-Host "Contents of current directory:"
+          Get-ChildItem
+          if (Test-Path "build") {
+            Write-Host "Contents of build directory:"
+            Get-ChildItem build/
+          }
+          if (Test-Path "dist") {
+            Write-Host "Contents of dist directory:"
+            Get-ChildItem dist/
+          }
+          exit 1
+        }
+        
+        Write-Host "Windows ARM64 build completed successfully"
+        
+    - name: Verify Windows ARM64 build
+      run: |
+        Write-Host "Verifying Windows ARM64 build..."
+        Write-Host "Contents of current directory:"
+        Get-ChildItem
+        
+        if (Test-Path "dist") {
+          Write-Host "Contents of dist directory:"
+          Get-ChildItem dist/
+        } else {
+          Write-Error "dist directory not found"
+          exit 1
+        }
+        
+        if (Test-Path "dist/PDFUtilities.exe") {
+          Write-Host "Windows ARM64 executable file found"
+          Write-Host "File information:"
+          Get-Item "dist/PDFUtilities.exe" | Select-Object Name, Length, LastWriteTime
+          Write-Host "Windows ARM64 build verification complete"
+        } else {
+          Write-Error "Windows ARM64 executable file not found"
+          Write-Host "Available items in dist:"
+          Get-ChildItem dist/
+          exit 1
+        }
+        
+    - name: Upload Windows ARM64 artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PDFUtilities-Windows-arm64
+        path: dist/PDFUtilities.exe
+        retention-days: 30
+      if: always() && hashFiles('dist/PDFUtilities.exe') != ''
+
   build-linux:
     runs-on: ubuntu-latest
     
@@ -341,7 +434,7 @@ jobs:
       if: always() && hashFiles('dist/PDFUtilities/**') != ''
 
   create-release:
-    needs: [build-windows, build-linux, build-macos-arm, build-macos-intel]
+    needs: [build-windows, build-windows-arm, build-linux, build-macos-arm, build-macos-intel]
     runs-on: ubuntu-latest
     
     steps:
@@ -356,17 +449,18 @@ jobs:
         name: PDFUtilities-Windows
         path: ./windows-build
         
+    - name: Download Windows ARM64 artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: PDFUtilities-Windows-arm64
+        path: ./windows-arm-build
+      continue-on-error: true
+        
     - name: Download Linux artifact
       uses: actions/download-artifact@v4
       with:
         name: PDFUtilities-Linux
         path: ./linux-build
-        
-    # - name: Download Linux ARM artifact
-    #   uses: actions/download-artifact@v4
-    #   with:
-    #     name: PDFUtilities-Linux-arm64
-    #     path: ./linux-arm-build
         
     - name: Download macOS ARM artifact
       uses: actions/download-artifact@v4
@@ -399,6 +493,28 @@ jobs:
           exit 1
         fi
         
+        # Check Windows ARM64
+        if [ -d "./windows-arm-build" ]; then
+          echo "✅ Windows ARM64 build directory found"
+          echo "Contents of windows-arm-build:"
+          ls -la ./windows-arm-build/
+          
+          if [ -f "./windows-arm-build/PDFUtilities.exe" ]; then
+            echo "✅ Windows ARM64 executable found"
+            echo "File information:"
+            file ./windows-arm-build/PDFUtilities.exe
+            echo "✅ Windows ARM64 build verified"
+          else
+            echo "❌ PDFUtilities.exe not found in windows-arm-build directory"
+            echo "Available files:"
+            ls -la ./windows-arm-build/
+            echo "⚠️  Windows ARM64 build not available, continuing..."
+          fi
+        else
+          echo "❌ Windows ARM64 build directory not found"
+          echo "⚠️  Windows ARM64 build not available, continuing..."
+        fi
+        
         # Check Linux
         if [ -d "./linux-build" ]; then
           ls -la ./linux-build/
@@ -411,32 +527,6 @@ jobs:
           echo "❌ Linux build directory not found"
           exit 1
         fi
-        
-        # Check Linux ARM - DISABLED
-        # if [ -d "./linux-arm-build" ]; then
-        #   echo "✅ Linux ARM build directory found"
-        #   echo "Contents of linux-arm-build:"
-        #   ls -la ./linux-arm-build/
-        #   
-        #   if [ -f "./linux-arm-build/PDFUtilities" ]; then
-        #     echo "✅ Linux ARM executable found"
-        #     echo "File information:"
-        #     file ./linux-arm-build/PDFUtilities
-        #     echo "Architecture information:"
-        #     lipo -info ./linux-arm-build/PDFUtilities || echo "lipo info not available"
-        #     echo "✅ Linux ARM build verified"
-        #   else
-        #     echo "❌ PDFUtilities executable not found in linux-arm-build directory"
-        #     echo "Available files:"
-        #     ls -la ./linux-arm-build/
-        #     exit 1
-        #   fi
-        # else
-        #   echo "❌ Linux ARM build directory not found"
-        #   echo "Available directories:"
-        #   ls -la ./
-        #   exit 1
-        # fi
         
         # Check macOS ARM (should be a single executable file)
         if [ -d "./macos-arm-build" ]; then
@@ -522,13 +612,14 @@ jobs:
         
         ### Downloads
         - **Windows (x64)**: PDFUtilities-Windows-x64.exe
+        - **Windows (ARM64)**: PDFUtilities-Windows-arm64.exe
         - **Linux (x64)**: PDFUtilities-Linux-x64
         - **macOS (Apple Silicon/ARM64)**: PDFUtilities-macOS-arm64
         - **macOS (Intel/x64)**: PDFUtilities-macOS-x64
         - **Source code**: PDFUtilities-Source.zip
         
         ### System Requirements
-        - **Windows**: Windows 10+ (x64)
+        - **Windows**: Windows 10+ (x64 or ARM64)
         - **Linux**: Ubuntu 18.04+ or equivalent (x64)
         - **macOS**: macOS 10.15+ (both Intel and Apple Silicon processors supported)
         - **Source**: Python 3.11+ (for source installation)
@@ -558,6 +649,21 @@ jobs:
         cp ./windows-build/PDFUtilities.exe ./PDFUtilities-Windows-x64.exe
         gh release upload $VERSION ./PDFUtilities-Windows-x64.exe --clobber
         echo "Windows executable uploaded successfully as PDFUtilities-Windows-x64.exe"
+        
+    - name: Upload Windows ARM64 executable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "Uploading Windows ARM64 executable for version: $VERSION"
+        if [ -f "./windows-arm-build/PDFUtilities.exe" ]; then
+          # Rename the Windows ARM64 executable to include OS and architecture
+          cp ./windows-arm-build/PDFUtilities.exe ./PDFUtilities-Windows-arm64.exe
+          gh release upload $VERSION ./PDFUtilities-Windows-arm64.exe --clobber
+          echo "Windows ARM64 executable uploaded successfully as PDFUtilities-Windows-arm64.exe"
+        else
+          echo "⚠️  Windows ARM64 executable not found, skipping upload"
+        fi
         
     - name: Upload Linux executable
       env:
