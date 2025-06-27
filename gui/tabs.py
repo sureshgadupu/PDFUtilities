@@ -1,20 +1,16 @@
 import os
 
-from PyQt6.QtCore import QEvent, Qt, pyqtSignal
-from PyQt6.QtGui import QKeySequence, QShortcut
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeySequence
 from PyQt6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
-    QProgressBar,
-    QPushButton,
+    QShortcut,
     QSpinBox,
-    QTableWidgetItem,
     QVBoxLayout,
-    QWidget,
 )
 
 from workers import (
@@ -123,7 +119,11 @@ class CompressTab(BaseTab):
         self.level_combo.setStyleSheet("color: #000;")
         self.level_combo.addItems(["Smallest (Low Quality)", "Balanced (Medium Quality)", "Largest (High Quality)"])
         self.level_combo.setCurrentText("Balanced (Medium Quality)")
-        self.level_combo.setToolTip("Smallest: Maximum compression, smallest file size, lowest quality\nBalanced: Medium compression and quality\nLargest: Minimum compression, largest file size, highest quality")
+        self.level_combo.setToolTip(
+            "Smallest: Maximum compression, smallest file size, lowest quality\n"
+            "Balanced: Medium compression and quality\n"
+            "Largest: Minimum compression, largest file size, highest quality"
+        )
         level_layout.addWidget(level_label)
         level_layout.addWidget(self.level_combo)
         level_layout.addStretch()

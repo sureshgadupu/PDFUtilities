@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QListWidget, QListWidgetItem
+from PyQt6.QtWidgets import QListWidget
 
 
 class ToggleListWidget(QListWidget):

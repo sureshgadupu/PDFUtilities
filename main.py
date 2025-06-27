@@ -1,6 +1,5 @@
 import os
 import sys
-from pathlib import Path
 
 from PyQt6.QtCore import QSize, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QColor, QFont, QIcon, QPainter, QPixmap
@@ -8,15 +7,11 @@ from PyQt6.QtWidgets import (
     QApplication,
     QFileDialog,
     QFrame,
-    QHBoxLayout,
     QLabel,
     QMainWindow,
     QMenu,
     QMenuBar,
     QMessageBox,
-    QProgressBar,
-    QPushButton,
-    QSizePolicy,
     QSplashScreen,
     QTabWidget,
     QToolBar,
@@ -27,7 +22,14 @@ from PyQt6.QtWidgets import (
 )
 
 from compressor import is_ghostscript_available
-from gui.tabs import CompressTab, ConvertTab, ConvertToImageTab, ExtractTab, MergeTab, SplitTab
+from gui.tabs import (
+    CompressTab,
+    ConvertTab,
+    ConvertToImageTab,
+    ExtractTab,
+    MergeTab,
+    SplitTab,
+)
 
 
 def get_resource_path(relative_path):
@@ -246,7 +248,7 @@ class PDFConverterApp(QMainWindow):
         self.convert_to_image_tab.start_btn.clicked.connect(self._start_convert_to_image)
 
         self.tabs_initialized = True
-        
+
         # Set the first tab (Convert to DOCX) as the default active tab
         self.tab_widget.setCurrentIndex(0)
 
@@ -275,7 +277,7 @@ class PDFConverterApp(QMainWindow):
             """
             QMenu::item {
                 background: #b2e0f7;
-                color: #000000;                
+                color: #000000;
             }
             QMenu::item:selected {
                 background: #a2d4ec;
@@ -304,7 +306,7 @@ class PDFConverterApp(QMainWindow):
             """
             QMenu::item {
                 background: #b2e0f7;
-                color: #000000;               
+                color: #000000;
             }
             QMenu::item:selected {
                 background: #a2d4ec;

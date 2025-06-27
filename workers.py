@@ -172,8 +172,7 @@ class MergeWorker(QThread):
                     pdf_document.close()
 
                     # Update progress
-                    progress = int((i + 1) / total_files * 100)
-                    self.progress.emit(progress)
+                    self.progress.emit(int((i + 1) / len(self.pdf_files) * 100))
 
                 except Exception as e:
                     self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
@@ -209,8 +208,7 @@ class SplitWorker(QThread):
     def run(self):
         try:
             self._is_running = True
-            total_files = len(self.pdf_files)
-            success = True  # Track overall success
+            success = True
 
             for i, pdf_file in enumerate(self.pdf_files):
                 if not self._is_running:
@@ -246,7 +244,8 @@ class SplitWorker(QThread):
                         invalid_pages = [p for p in self.page_ranges if p > total_pages]
                         if invalid_pages:
                             self.error.emit(
-                                f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages."
+                                f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. "
+                                f"Document has only {total_pages} pages."
                             )
                             success = False
                             continue
@@ -307,8 +306,7 @@ class SplitWorker(QThread):
                             os.remove(temp_file)
 
                     doc.close()
-                    progress = int((i + 1) / total_files * 100)
-                    self.progress.emit(progress)
+                    self.progress.emit(int((i + 1) / len(self.pdf_files) * 100))
 
                 except Exception as e:
                     self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
@@ -347,7 +345,6 @@ class ExtractWorker(QThread):
     def run(self):
         try:
             self._is_running = True
-            total_files = len(self.pdf_files)
 
             for i, pdf_file in enumerate(self.pdf_files):
                 if not self._is_running:
@@ -372,7 +369,8 @@ class ExtractWorker(QThread):
                         invalid_pages = [p for p in self.page_ranges if p > total_pages]
                         if invalid_pages:
                             self.error.emit(
-                                f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. Document has only {total_pages} pages."
+                                f"Invalid page numbers: {', '.join(map(str, invalid_pages))}. "
+                                f"Document has only {total_pages} pages."
                             )
                             continue
 
@@ -420,8 +418,7 @@ class ExtractWorker(QThread):
                                 self.status_update.emit(f"Extracted image {img_index + 1} from page {page_num + 1}")
 
                     doc.close()
-                    progress = int((i + 1) / total_files * 100)
-                    self.progress.emit(progress)
+                    self.progress.emit(int((i + 1) / len(self.pdf_files) * 100))
 
                 except Exception as e:
                     self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
@@ -460,7 +457,6 @@ class ConvertToImageWorker(QThread):
     def run(self):
         try:
             self._is_running = True
-            total_files = len(self.pdf_files)
             success = True
 
             for i, pdf_file in enumerate(self.pdf_files):
@@ -605,8 +601,7 @@ class ConvertToImageWorker(QThread):
                             success = False
 
                     doc.close()
-                    progress = int((i + 1) / total_files * 100)
-                    self.progress.emit(progress)
+                    self.progress.emit(int((i + 1) / len(self.pdf_files) * 100))
 
                 except Exception as e:
                     self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
@@ -645,8 +640,6 @@ class ExtractTextWorker(QThread):
     def run(self):
         try:
             self._is_running = True
-            total_files = len(self.pdf_files)
-            success = True
 
             for i, pdf_file in enumerate(self.pdf_files):
                 if not self._is_running:
@@ -675,8 +668,8 @@ class ExtractTextWorker(QThread):
                             pages_to_process = self._parse_page_range(self.page_range, total_pages)
                         except ValueError as e:
                             self.error.emit(f"Invalid page range: {str(e)}")
-                            success = False
-                            continue
+                            self.finished.emit(False)
+                            return
 
                     # Extract text from each page
                     extracted_text = []
@@ -692,8 +685,8 @@ class ExtractTextWorker(QThread):
 
                         except Exception as e:
                             self.error.emit(f"Error extracting text from page {page_num + 1}: {str(e)}")
-                            success = False
-                            continue
+                            self.finished.emit(False)
+                            return
 
                     # Save extracted text
                     if extracted_text:
@@ -713,19 +706,19 @@ class ExtractTextWorker(QThread):
                             self.status_update.emit(f"Saved extracted text to: {output_file}")
                         except Exception as e:
                             self.error.emit(f"Error saving extracted text: {str(e)}")
-                            success = False
+                            self.finished.emit(False)
+                            return
 
                     doc.close()
-                    progress = int((i + 1) / total_files * 100)
-                    self.progress.emit(progress)
+                    self.progress.emit(int((i + 1) / len(self.pdf_files) * 100))
 
                 except Exception as e:
                     self.error.emit(f"Error processing {os.path.basename(pdf_file)}: {str(e)}")
-                    success = False
-                    continue
+                    self.finished.emit(False)
+                    return
 
             if self._is_running:
-                self.finished.emit(success)
+                self.finished.emit(True)
 
         except Exception as e:
             if self._is_running:

@@ -1,5 +1,4 @@
 import os
-import platform
 import shutil
 import subprocess
 import sys
@@ -49,7 +48,7 @@ def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True
                         print(f"[ERROR]     Failed to recompress image {img_index+1}: {img_e}")
         if remove_metadata:
             doc.set_metadata({})
-            print(f"[DEBUG] Metadata removed.")
+            print("[DEBUG] Metadata removed.")
         print(f"[DEBUG] Saving compressed PDF to: {output_path}")
         doc.save(output_path, garbage=4, deflate=True)
         doc.close()
@@ -107,7 +106,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
         # Clean up intermediate file
         try:
             os.remove(temp_output)
-        except:
+        except OSError:
             pass
 
     # If quality steps didn't work, try image quality reduction
@@ -128,7 +127,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
         # Clean up intermediate file
         try:
             os.remove(temp_output)
-        except:
+        except OSError:
             pass
 
         # Reduce quality more aggressively if we're still far from target
@@ -148,7 +147,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
             ghostscript_compress(input_path, temp_output, quality, custom_dpi=dpi)
             temp_size = os.path.getsize(temp_output) / 1024
             sizes[f"{quality}_{dpi}"] = (temp_output, temp_size)
-        except:
+        except (OSError, subprocess.CalledProcessError):
             pass
 
     # Add low quality with image compression as last resort
@@ -157,7 +156,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
         ghostscript_compress(input_path, temp_output, "low", image_quality=30)
         temp_size = os.path.getsize(temp_output) / 1024
         sizes["low_q30"] = (temp_output, temp_size)
-    except:
+    except (OSError, subprocess.CalledProcessError):
         pass
 
     if not sizes:
@@ -169,7 +168,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
         if path != best_quality[1][0]:
             try:
                 os.remove(path)
-            except:
+            except OSError:
                 pass
 
     shutil.move(best_quality[1][0], output_path)

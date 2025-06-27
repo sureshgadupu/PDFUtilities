@@ -3,7 +3,6 @@ import platform
 import shutil
 import subprocess
 import sys
-import time
 
 
 def install_pyinstaller():
@@ -20,8 +19,8 @@ def install_pyinstaller():
 def check_pyinstaller():
     """Checks if PyInstaller is installed."""
     try:
-        import PyInstaller
-    except ImportError:
+        subprocess.run([sys.executable, "-m", "PyInstaller", "--version"], capture_output=True, check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
         print("PyInstaller is not installed.")
         install_pyinstaller()
 
@@ -132,15 +131,15 @@ def build():
         cleanup_dist_folder()
         # macOS-specific setup
         print("macOS build detected - ensuring proper permissions...")
-        
+
         # Set environment variables to help with Qt framework issues
-        os.environ['PYTHONPATH'] = os.getcwd() + ':' + os.environ.get('PYTHONPATH', '')
-        
+        os.environ["PYTHONPATH"] = os.getcwd() + ":" + os.environ.get("PYTHONPATH", "")
+
         # Clear any cached PyInstaller data that might cause issues
         cache_dirs = [
-            os.path.expanduser('~/Library/Caches/pyinstaller'),
-            os.path.join(os.getcwd(), 'build'),
-            os.path.join(os.getcwd(), '__pycache__')
+            os.path.expanduser("~/Library/Caches/pyinstaller"),
+            os.path.join(os.getcwd(), "build"),
+            os.path.join(os.getcwd(), "__pycache__"),
         ]
         for cache_dir in cache_dirs:
             if os.path.exists(cache_dir):
@@ -155,7 +154,7 @@ def build():
 
     # Build command with platform-specific options
     command = ["pyinstaller", spec_file, "--noconfirm", "--clean", "--log-level=INFO"]
-    
+
     if system == "Darwin":
         print("macOS-specific build options are now handled in the spec file.")
 
@@ -175,7 +174,7 @@ def build():
 
         if process.returncode == 0:
             print("Build completed successfully.")
-            print(f"You can find the executable in the 'dist' folder.")
+            print("You can find the executable in the 'dist' folder.")
 
             # Platform-specific post-build steps
             if system == "Windows":
@@ -185,11 +184,12 @@ def build():
                 print("\nmacOS build completed successfully!")
                 print("Note: The executable may require security permissions on first run.")
                 print("Users may need to go to System Preferences > Security & Privacy to allow the app.")
-                
+
                 # Check if it's a universal binary
                 try:
-                    result = subprocess.run(["lipo", "-info", "dist/PDFUtilities/PDFUtilities"], 
-                                          capture_output=True, text=True, check=True)
+                    result = subprocess.run(
+                        ["lipo", "-info", "dist/PDFUtilities/PDFUtilities"], capture_output=True, text=True, check=True
+                    )
                     print(f"Binary architecture info: {result.stdout.strip()}")
                 except subprocess.CalledProcessError:
                     print("Could not determine binary architecture info")
