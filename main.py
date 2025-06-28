@@ -273,23 +273,41 @@ class PDFConverterApp(QMainWindow):
         add_file_action.triggered.connect(self._add_file)
         file_menu.addAction(add_file_action)
 
+        add_folder_action = QAction("Add Folder", self)
+        add_folder_action.setShortcut("Ctrl+Shift+O")
+        add_folder_action.triggered.connect(self._add_folder)
+        file_menu.addAction(add_folder_action)
+
+        # Add separator before Exit
+        separator = QAction(self)
+        separator.setSeparator(True)
+        separator.setVisible(True)
+        file_menu.addAction(separator)
+
+        # Add Exit action
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut("Ctrl+Q")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
         file_menu.setStyleSheet(
             """
             QMenu::item {
                 background: #b2e0f7;
                 color: #000000;
+                padding: 4px 8px;
             }
             QMenu::item:selected {
                 background: #a2d4ec;
                 color: #000000;
             }
+            QMenu::separator {
+                background: #a2d4ec;
+                height: 1px;
+                margin: 2px 4px;
+            }
         """
         )
-
-        add_folder_action = QAction("Add Folder", self)
-        add_folder_action.setShortcut("Ctrl+Shift+O")
-        add_folder_action.triggered.connect(self._add_folder)
-        file_menu.addAction(add_folder_action)
 
         # Add Edit menu items
         delete_action = QAction("Delete", self)
