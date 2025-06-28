@@ -2,3 +2,4 @@ PyQt6==6.9.0
 pdf2docx==0.5.8
 Pillow==11.2.1
 PyMuPDF==1.23.26
+toml==0.10.2

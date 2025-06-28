@@ -30,7 +30,15 @@ jobs:
         
     - name: Build Windows executable
       run: |
-        python build_app.py
+        # Extract version from tag and create version file
+        $VERSION = $env:GITHUB_REF -replace 'refs/tags/v', ''
+        echo "Building version: $VERSION"
+        
+        # Create version file
+        echo $VERSION > version.txt
+        
+        # Build the executable
+        python build_with_version.py --version $VERSION
         
     - name: Verify Windows build
       run: |
@@ -74,6 +82,13 @@ jobs:
         echo "Python version: $(python --version)"
         echo "Architecture: $(python -c 'import platform; print(platform.machine())')"
         
+        # Extract version from tag and create version file
+        $VERSION = $env:GITHUB_REF -replace 'refs/tags/v', ''
+        echo "Building version: $VERSION"
+        
+        # Create version file
+        echo $VERSION > version.txt
+        
         # Check if spec file exists
         if (!(Test-Path "pdf_utility.spec")) {
           Write-Error "pdf_utility.spec not found!"
@@ -83,9 +98,9 @@ jobs:
         
         Write-Host "pdf_utility.spec found"
         
-        # Run the standard build script
-        Write-Host "Running build_app.py..."
-        python build_app.py
+        # Run the new build script with version embedding
+        Write-Host "Running build_with_version.py..."
+        python build_with_version.py --version $VERSION
         
         # Check build result
         $BUILD_EXIT_CODE = $LASTEXITCODE
@@ -167,7 +182,15 @@ jobs:
         
     - name: Build Linux executable
       run: |
-        python build_app.py
+        # Extract version from tag and create version file
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Building version: $VERSION"
+        
+        # Create version file
+        echo $VERSION > version.txt
+        
+        # Build the executable
+        python build_with_version.py --version $VERSION
         
     - name: Verify Linux build
       run: |
@@ -252,6 +275,13 @@ jobs:
         echo "Python version: $(python --version)"
         echo "Architecture: $(uname -m)"
         
+        # Extract version from tag and create version file
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Building version: $VERSION"
+        
+        # Create version file
+        echo $VERSION > version.txt
+        
         # Check if spec file exists
         if [ ! -f "pdf_utility.spec" ]; then
           echo "❌ Error: pdf_utility.spec not found!"
@@ -262,9 +292,9 @@ jobs:
         
         echo "✅ pdf_utility.spec found"
         
-        # Run the standard build script
-        echo "Running build_app.py..."
-        python build_app.py
+        # Run the new build script with version embedding
+        echo "Running build_with_version.py..."
+        python build_with_version.py --version $VERSION
         
         # Check build result
         BUILD_EXIT_CODE=$?
@@ -360,6 +390,13 @@ jobs:
         echo "Python version: $(python --version)"
         echo "Architecture: $(uname -m)"
         
+        # Extract version from tag and create version file
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Building version: $VERSION"
+        
+        # Create version file
+        echo $VERSION > version.txt
+        
         # Check if spec file exists
         if [ ! -f "pdf_utility.spec" ]; then
           echo "❌ Error: pdf_utility.spec not found!"
@@ -370,9 +407,9 @@ jobs:
         
         echo "✅ pdf_utility.spec found"
         
-        # Run the standard build script
-        echo "Running build_app.py..."
-        python build_app.py
+        # Run the new build script with version embedding
+        echo "Running build_with_version.py..."
+        python build_with_version.py --version $VERSION
         
         # Check build result
         BUILD_EXIT_CODE=$?

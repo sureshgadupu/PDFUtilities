@@ -14,6 +14,13 @@ datas = []
 datas += collect_data_files('PyQt6')
 datas += [('gui/icons', 'gui/icons')]
 
+# Add version file if it exists
+if os.path.exists('version.txt'):
+    datas += [('version.txt', '.')]
+    print("[SPEC DEBUG] Including version.txt in build")
+else:
+    print("[SPEC DEBUG] version.txt not found, will use fallback version")
+
 # Add all the specific icons that are referenced in the code
 icon_files = [
     'gui/icons/file-plus.svg',

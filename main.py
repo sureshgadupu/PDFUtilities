@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 from PyQt6.QtCore import QSize, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QColor, QFont, QIcon, QPainter, QPixmap
@@ -19,6 +20,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QWidgetAction,
+    QProgressBar,
 )
 
 from compressor import is_ghostscript_available
@@ -30,6 +32,7 @@ from gui.tabs import (
     MergeTab,
     SplitTab,
 )
+from version import get_version
 
 
 def get_resource_path(relative_path):
@@ -333,6 +336,31 @@ class PDFConverterApp(QMainWindow):
         """
         )
 
+        # Add Help menu items
+        documentation_action = QAction("Documentation", self)
+        documentation_action.setShortcut("F1")
+        documentation_action.triggered.connect(self._show_documentation)
+        help_menu.addAction(documentation_action)
+
+        help_menu.addSeparator()
+
+        about_action = QAction("About PDF Utilities", self)
+        about_action.triggered.connect(self._show_about)
+        help_menu.addAction(about_action)
+
+        help_menu.setStyleSheet(
+            """
+            QMenu::item {
+                background: #b2e0f7;
+                color: #000000;
+            }
+            QMenu::item:selected {
+                background: #a2d4ec;
+                color: #000000;
+            }
+        """
+        )
+
         menubar.addMenu(file_menu)
         menubar.addMenu(edit_menu)
         menubar.addMenu(help_menu)
@@ -460,6 +488,70 @@ class PDFConverterApp(QMainWindow):
         """Handle convert to image button click"""
         if hasattr(self, "convert_to_image_tab"):
             self.convert_to_image_tab._start_convert_to_image()
+
+    def _show_about(self):
+        """Show About dialog"""
+        about_text = """
+        <div style="color: black;">
+        <h2>PDF Utilities</h2>
+        <p><b>Version:</b> 0.0.4</p>
+        <p><b>Description:</b> A comprehensive PDF processing application built with PyQt6.</p>
+        <p><b>Features:</b></p>
+        <ul>
+            <li>Convert PDF to DOCX</li>
+            <li>Compress PDF files</li>
+            <li>Merge multiple PDFs</li>
+            <li>Split PDF pages</li>
+            <li>Extract text from PDFs</li>
+            <li>Convert PDF to images</li>
+        </ul>
+        <p><b>License:</b> GNU Affero General Public License v3.0 (AGPL-3.0)</p>
+        <p><b>Dependencies:</b> PyQt6, PyMuPDF, pdf2docx, Pillow, Ghostscript</p>
+        </div>
+        """
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("About PDF Utilities")
+        msg_box.setText(about_text)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.setStyleSheet("QPushButton { color: black; }")
+        msg_box.exec()
+
+    def _show_documentation(self):
+        """Show documentation dialog"""
+        doc_text = """
+        <div style="color: black;">
+        <h2>PDF Utilities Documentation</h2>
+        
+        <h3>Quick Start Guide</h3>
+        <p><b>1. Add Files:</b> Use "Add File" or "Add Folder" to select PDF files</p>
+        <p><b>2. Choose Operation:</b> Select the appropriate tab for your task</p>
+        <p><b>3. Configure Settings:</b> Adjust options as needed</p>
+        <p><b>4. Select Output:</b> Choose where to save results</p>
+        <p><b>5. Start Processing:</b> Click the action button</p>
+        
+        <h3>Features</h3>
+        <p><b>Convert to DOCX:</b> Convert PDF files to editable Word documents</p>
+        <p><b>Compress PDF:</b> Reduce file size with quality options</p>
+        <p><b>Merge PDFs:</b> Combine multiple PDFs into one file</p>
+        <p><b>Split PDF:</b> Extract specific pages or ranges</p>
+        <p><b>Extract Text:</b> Pull text content from PDFs</p>
+        <p><b>Convert to Image:</b> Export PDF pages as images</p>
+        
+        <h3>Keyboard Shortcuts</h3>
+        <p><b>Ctrl+O:</b> Add File</p>
+        <p><b>Ctrl+Shift+O:</b> Add Folder</p>
+        <p><b>Delete:</b> Remove selected files</p>
+        <p><b>Ctrl+Shift+D:</b> Clear all files</p>
+        <p><b>Ctrl+Q:</b> Exit application</p>
+        <p><b>F1:</b> Show this documentation</p>
+        </div>
+        """
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Documentation")
+        msg_box.setText(doc_text)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.setStyleSheet("QPushButton { color: black; }")
+        msg_box.exec()
 
     def closeEvent(self, event):
         # Stop any active workers
