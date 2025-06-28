@@ -1,14 +1,13 @@
 import os
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QKeySequence
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
-    QShortcut,
     QSpinBox,
     QVBoxLayout,
 )
@@ -239,8 +238,14 @@ class CompressTab(BaseTab):
         if successful_messages and not failed_messages:
             self.status_label.setText("Compression completed successfully!")
         elif successful_messages and failed_messages:
-            self.status_label.setText(f"Compression completed with {len(failed_messages)} errors.")
-            self._cleanup_generated_files()  # Clean up on partial failure
+            # Check if failures are actual failures or just target size not achieved
+            actual_failures = [msg for msg in failed_messages if "Failed to compress file" in msg]
+            if actual_failures:
+                self.status_label.setText(f"Compression completed with {len(actual_failures)} errors.")
+                self._cleanup_generated_files()  # Clean up on actual failures
+            else:
+                # All "failures" are just target size not achieved, but files were compressed
+                self.status_label.setText("Compression completed! Some files could not reach target size.")
         else:
             self.status_label.setText("Compression failed.")
             self._cleanup_generated_files()  # Clean up on complete failure
@@ -250,7 +255,10 @@ class CompressTab(BaseTab):
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         self.status_label.setText(f"Error: {error_message}")
-        self._cleanup_generated_files()  # Clean up on error
+        
+        # Only clean up on critical errors, not on target size issues
+        if "Critical error" in error_message or "Failed to create output directory" in error_message:
+            self._cleanup_generated_files()
 
     def _cleanup_generated_files(self):
         """Remove any generated files if compression failed"""

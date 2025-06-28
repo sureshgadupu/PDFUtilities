@@ -101,7 +101,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
         if temp_size <= target_size_kb:
             print(f"Target size achieved with {quality} quality ({dpi} DPI)!")
             shutil.move(temp_output, output_path)
-            return True
+            return True, f"Target size achieved: {temp_size:.2f} KB"
 
         # Clean up intermediate file
         try:
@@ -122,7 +122,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
         if temp_size <= target_size_kb:
             print(f"Target size achieved with {quality}% image quality!")
             shutil.move(temp_output, output_path)
-            return True
+            return True, f"Target size achieved: {temp_size:.2f} KB"
 
         # Clean up intermediate file
         try:
@@ -160,7 +160,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
         pass
 
     if not sizes:
-        return False
+        return False, "Failed to compress file"
 
     # Clean up all temporary files except the smallest one
     best_quality = min(sizes.items(), key=lambda x: x[1][1])
@@ -172,8 +172,11 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
                 pass
 
     shutil.move(best_quality[1][0], output_path)
-    print(f"Final size: {best_quality[1][1]:.2f} KB")
-    return False
+    final_size = best_quality[1][1]
+    print(f"Final size: {final_size:.2f} KB")
+    
+    # Return False for target size not achieved, but with informative message
+    return False, f"Target size ({target_size_kb} KB) not achieved. Best size: {final_size:.2f} KB"
 
 
 def get_bundled_ghostscript_path():
@@ -336,11 +339,16 @@ def compress_multiple_pdfs(
                 print(f"[DEBUG] Using target size compression: {target_size_kb} KB")
                 if status_callback:
                     status_callback(f"Compressing to target size: {target_size_kb} KB...")
-                success = compress_pdf_to_target_size(pdf, out_path, target_size_kb)
+                success, message = compress_pdf_to_target_size(pdf, out_path, target_size_kb)
                 if success:
-                    successes.append(f"Compressed: {base}")
+                    successes.append(f"Compressed: {base} - {message}")
                 else:
-                    failures.append(f"Failed to compress {base} to target size")
+                    # Check if it's a complete failure or just target size not achieved
+                    if "Failed to compress file" in message:
+                        failures.append(f"Failed to compress {base}: {message}")
+                    else:
+                        # Target size not achieved but file was compressed
+                        successes.append(f"Compressed: {base} - {message}")
             else:
                 # If no target size, use specified compression mode
                 print(f"[DEBUG] Using {compression_mode} compression (no target size)")
