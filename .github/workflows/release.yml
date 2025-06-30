@@ -657,7 +657,7 @@ jobs:
         
         ### System Requirements
         - **Windows**: Windows 10+ (x64 or ARM64)
-        - **Linux**: Ubuntu 18.04+ or equivalent (x64)
+        - **Linux**: Ubuntu 22.04+ or equivalent (x64)
         - **macOS**: macOS 10.15+ (both Intel and Apple Silicon processors supported)
         - **Source**: Python 3.11+ (for source installation)
         
@@ -669,7 +669,7 @@ jobs:
         ### Notes
         - **macOS**: Choose the appropriate build for your Mac processor (Intel x64 or Apple Silicon ARM64)
         - **macOS**: May require security permissions on first run (System Preferences > Security & Privacy)
-        - **Linux**: Tested on Ubuntu 20.04+, should work on most modern distributions
+        - **Linux**: Tested on Ubuntu 22.04+, should work on most modern distributions
         - **Windows**: No additional dependencies required" \
           --draft=false \
           --prerelease=false

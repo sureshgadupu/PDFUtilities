@@ -9,24 +9,50 @@ from pathlib import Path
 
 
 def get_version():
-    """
-    Get the current version from multiple sources in order of preference:
-    1. Build-time embedded version (for standalone executables)
-    2. pyproject.toml (for development)
-    3. Fallback version
-    """
-    # Try to get version from build-time embedded file first
-    version = _get_build_version()
-    if version:
-        return version
-    
-    # Try to get version from pyproject.toml (development mode)
-    version = _get_pyproject_version()
-    if version:
-        return version
-    
-    # Fallback version
-    return '0.0.0'
+    """Get the current version of the application"""
+    try:
+        # Try to read from pyproject.toml first (development mode)
+        import toml
+        try:
+            with open("pyproject.toml", "r", encoding="utf-8") as f:
+                data = toml.load(f)
+                return data["tool"]["poetry"]["version"]
+        except (FileNotFoundError, KeyError, toml.TomlDecodeError):
+            pass
+
+        # Try to read from version.txt (production mode)
+        import sys
+        import os
+
+        # Determine the base path for the executable
+        if getattr(sys, "frozen", False):
+            # Running as compiled executable
+            base_path = os.path.dirname(sys.executable)
+            if hasattr(sys, "_MEIPASS"):
+                # One-file mode
+                base_path = sys._MEIPASS
+            else:
+                # One-directory mode
+                base_path = os.path.dirname(sys.executable)
+        else:
+            # Running as script
+            base_path = os.path.dirname(os.path.abspath(__file__))
+
+        # Look for version.txt in the base path
+        version_file = os.path.join(base_path, "version.txt")
+        
+        if os.path.exists(version_file):
+            with open(version_file, "r", encoding="utf-8") as f:
+                version = f.read().strip()
+                if version:
+                    return version
+
+        # Fallback to hardcoded version
+        return "0.0.5"
+
+    except Exception as e:
+        # Final fallback
+        return "0.0.5"
 
 
 def _get_build_version():
@@ -38,21 +64,31 @@ def _get_build_version():
             if hasattr(sys, '_MEIPASS'):
                 # One-file mode: files are extracted to a temporary directory
                 base_path = sys._MEIPASS
+                print(f"[DEBUG] One-file mode, looking in: {base_path}")
             else:
                 # One-directory mode: files are in the same directory as the executable
                 base_path = os.path.dirname(sys.executable)
+                print(f"[DEBUG] One-directory mode, looking in: {base_path}")
         else:
             # Running as script
             base_path = os.path.dirname(os.path.abspath(__file__))
+            print(f"[DEBUG] Script mode, looking in: {base_path}")
         
         version_file = os.path.join(base_path, 'version.txt')
+        print(f"[DEBUG] Looking for version file: {version_file}")
+        
         if os.path.exists(version_file):
             with open(version_file, 'r', encoding='utf-8') as f:
                 version = f.read().strip()
                 if version:
+                    print(f"[DEBUG] Found version in version.txt: {version}")
                     return version
-    except Exception:
-        pass
+                else:
+                    print("[DEBUG] version.txt is empty")
+        else:
+            print(f"[DEBUG] version.txt not found at: {version_file}")
+    except Exception as e:
+        print(f"[DEBUG] Error reading version.txt: {e}")
     
     return None
 

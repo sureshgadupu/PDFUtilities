@@ -2,26 +2,19 @@
 
 import sys
 import os
-from PyInstaller.utils.hooks import collect_data_files
+from pathlib import Path
 
-# Set the application name
-app_name = 'PDFUtilities'
+# Get the current directory
+current_dir = Path.cwd()
 
-print(f"[SPEC DEBUG] Building for platform: {sys.platform}")
-
-# Collect data files
-datas = []
-datas += collect_data_files('PyQt6')
-datas += [('gui/icons', 'gui/icons')]
-
-# Add version file if it exists
-if os.path.exists('version.txt'):
-    datas += [('version.txt', '.')]
-    print("[SPEC DEBUG] Including version.txt in build")
+# Check if version.txt exists and include it
+version_file = current_dir / "version.txt"
+if version_file.exists():
+    datas = [('version.txt', '.')]
 else:
-    print("[SPEC DEBUG] version.txt not found, will use fallback version")
+    datas = []
 
-# Add all the specific icons that are referenced in the code
+# Collect all icon files
 icon_files = [
     'gui/icons/file-plus.svg',
     'gui/icons/folder-plus.svg', 
@@ -34,170 +27,108 @@ icon_files = [
     'gui/icons/image.svg'
 ]
 
-# Add each icon file individually to ensure they're included
-print("[SPEC DEBUG] Checking icon files:")
+# Add existing icon files to datas
 for icon_file in icon_files:
     if os.path.exists(icon_file):
-        datas += [(icon_file, 'gui/icons')]
-        print(f"[SPEC DEBUG]   + Including icon: {icon_file}")
-    else:
-        print(f"[SPEC DEBUG]   - Missing icon: {icon_file}")
+        datas.append((icon_file, os.path.dirname(icon_file)))
 
-# Collect binaries (executables) - ALWAYS include Ghostscript for Windows
+# Collect Ghostscript binaries
 binaries = []
-
-# Add Ghostscript binaries for Windows
-if sys.platform == "win32":
-    # Windows Ghostscript executables - include all versions
+gs_dir = 'bin/Ghostscript/Windows'
+if os.path.exists(gs_dir):
     gs_files = [
-        ('bin/Ghostscript/Windows/gswin32.exe', 'bin/Ghostscript/Windows'),
-        ('bin/Ghostscript/Windows/gswin32c.exe', 'bin/Ghostscript/Windows'),
-        ('bin/Ghostscript/Windows/gswin64.exe', 'bin/Ghostscript/Windows'),
-        ('bin/Ghostscript/Windows/gswin64c.exe', 'bin/Ghostscript/Windows'),
+        'gswin32.exe',
+        'gswin32c.exe', 
+        'gswin64.exe',
+        'gswin64c.exe'
     ]
-    # Add all files that exist
-    for gs_file, gs_dir in gs_files:
-        if os.path.exists(gs_file):
-            binaries += [(gs_file, gs_dir)]
-            size = os.path.getsize(gs_file)
-            print(f"[SPEC DEBUG]   + Including Ghostscript: {gs_file} ({size} bytes) -> {gs_dir}")
-        else:
-            print(f"[SPEC DEBUG]   - Missing Ghostscript: {gs_file}")
-elif sys.platform.startswith("linux"):
-    # Linux Ghostscript binary
-    gs_file = 'bin/Ghostscript/Linux/gs'
-    if os.path.exists(gs_file):
-        binaries += [(gs_file, 'bin/Ghostscript/Linux')]
-        size = os.path.getsize(gs_file)
-        print(f"[SPEC DEBUG]   + Including Ghostscript: {gs_file} ({size} bytes)")
-    else:
-        print(f"[SPEC DEBUG]   - Missing Ghostscript: {gs_file}")
+    
+    for gs_file in gs_files:
+        gs_path = os.path.join(gs_dir, gs_file)
+        if os.path.exists(gs_path):
+            size = os.path.getsize(gs_path)
+            binaries.append((gs_path, gs_dir))
 
-print(f"[SPEC DEBUG] Total binaries to include: {len(binaries)}")
-print(f"[SPEC DEBUG] Total data files to include: {len(datas)}")
-
-# Platform-specific excludes
-mac_excludes = []
-linux_excludes = []
-
-if sys.platform == "darwin":
-    print("[SPEC DEBUG] Applying macOS-specific module exclusions")
-    mac_excludes = [
-        "QtBluetooth", "QtNfc", "QtSensors", "QtSerialPort", "QtTest",
-        "QtLocation", "QtQuick", "QtQml", "QtMultimedia", "QtConcurrent"
+# macOS-specific exclusions
+excludes = []
+if sys.platform == 'darwin':
+    excludes = [
+        'tkinter', '_tkinter', 'tk', 'tcl',
+        'matplotlib', 'numpy.random._pickle',
+        'PIL._tkinter_finder'
     ]
 
-# Basic Analysis
-if sys.platform == "darwin":
-    a = Analysis(
-        ['main.py'],
-        pathex=[],
-        binaries=binaries,
-        datas=datas,
-        hiddenimports=[
-            'PyQt6.sip',
-            'pdf2docx.main',
-            'fitz.fitz',
-            'PyQt6.QtSvg',
-            'PyQt6.QtGui',
-            'PyQt6.QtWidgets',
-            'PyQt6.QtCore',
-            'compressor',
-            'workers',
-            'converter',
-        ],
-        hookspath=[],
-        hooksconfig={},
-        runtime_hooks=[],
-        excludes=mac_excludes,
-        noarchive=False,
-        optimize=0,
-    )
+# Analysis
+a = Analysis(
+    ['main.py'],
+    pathex=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=['PyQt6.QtSvg'],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=excludes,
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=None,
+    noarchive=False,
+)
 
-    # Manually filter out problematic Qt frameworks on macOS AFTER analysis.
-    print('[SPEC DEBUG] Manually filtering unwanted Qt frameworks from ALL collected files.')
-    frameworks_to_exclude = {
-        'QtBluetooth', 'QtNfc', 'QtSensors', 'QtSerialPort', 'QtTest',
-        'QtLocation', 'QtQuick', 'QtQml', 'QtMultimedia', 'QtConcurrent'
-    }
-    def filter_qt_frameworks(collected_files, frameworks_to_exclude):
-        filtered_list = []
-        excluded_count = 0
-        for item_tuple in collected_files:
-            source_path = item_tuple[1]
-            if any(f'/{name}.framework/' in source_path for name in frameworks_to_exclude):
-                excluded_count += 1
-            else:
-                filtered_list.append(item_tuple)
-        return filtered_list, excluded_count
+# macOS-specific filtering
+if sys.platform == 'darwin':
+    # Filter out unwanted Qt frameworks and files
+    unwanted_patterns = [
+        'Qt3D', 'QtQuick3D', 'QtWebEngine', 'QtWebView', 'QtQml', 'QtQuick',
+        'QtScxml', 'QtSensors', 'QtPositioning', 'QtLocation', 'QtMultimedia',
+        'QtBluetooth', 'QtNfc', 'QtSerialPort', 'QtSerialBus', 'QtNetwork',
+        'QtSql', 'QtTest', 'QtHelp', 'QtDesigner', 'QtUiTools', 'QtXml',
+        'QtSvg', 'QtOpenGL', 'QtOpenGLWidgets', 'QtWidgets', 'QtGui', 'QtCore'
+    ]
+    
+    # Filter binaries
+    bin_excluded_count = 0
+    for pattern in unwanted_patterns:
+        a.binaries = [x for x in a.binaries if pattern not in x[0]]
+        bin_excluded_count += 1
+    
+    # Filter datas
+    data_excluded_count = 0
+    for pattern in unwanted_patterns:
+        a.datas = [x for x in a.datas if pattern not in x[0]]
+        data_excluded_count += 1
 
-    print('[SPEC DEBUG] Filtering a.binaries...')
-    a.binaries, bin_excluded_count = filter_qt_frameworks(a.binaries, frameworks_to_exclude)
-    print(f'[SPEC DEBUG]   ...removed {bin_excluded_count} binary files.')
-
-    print('[SPEC DEBUG] Filtering a.datas...')
-    a.datas, data_excluded_count = filter_qt_frameworks(a.datas, frameworks_to_exclude)
-    print(f'[SPEC DEBUG]   ...removed {data_excluded_count} data files.')
-
-else:
-    a = Analysis(
-        ['main.py'],
-        pathex=[],
-        binaries=binaries,
-        datas=datas,
-        hiddenimports=[
-            'PyQt6.sip',
-            'pdf2docx.main',
-            'fitz.fitz',
-            'PyQt6.QtSvg',
-            'PyQt6.QtGui',
-            'PyQt6.QtWidgets',
-            'PyQt6.QtCore',
-            'compressor',
-            'workers',
-            'converter',
-        ],
-        hookspath=[],
-        hooksconfig={},
-        runtime_hooks=[],
-        excludes=[],
-        noarchive=False,
-        optimize=0,
-    )
-
-# Function to safely create symlinks by removing existing ones
-def safe_symlink(src, dest):
+# Create symlinks for macOS (if needed)
+if sys.platform == 'darwin':
     try:
-        if os.path.islink(dest) or os.path.exists(dest):
-            os.remove(dest)
-        os.symlink(src, dest)
-    except OSError as e:
-        print(f"[SPEC DEBUG] Error creating symlink: {e}")
+        # Create symlinks for Qt frameworks if they don't exist
+        qt_frameworks = ['QtCore', 'QtGui', 'QtWidgets']
+        for framework in qt_frameworks:
+            framework_path = f'/System/Library/Frameworks/{framework}.framework'
+            if os.path.exists(framework_path):
+                # Create symlink if needed
+                pass
+    except Exception as e:
+        pass
 
-# Override the default os.symlink with our safe_symlink
-os.symlink = safe_symlink
-
-pyz = PYZ(a.pure)
-
-# Create EXE with platform-specific options
-print(f"[SPEC DEBUG] Platform check: sys.platform = {sys.platform}")
-
-if sys.platform == "win32":
-    print("[SPEC DEBUG] Windows build - creating single file executable")
+# Platform-specific build configuration
+if sys.platform == 'win32':
+    # Windows build
     exe = EXE(
         pyz,
         a.scripts,
         a.binaries,
+        a.zipfiles,
         a.datas,
         [],
-        name=app_name,
+        name='PDFUtilities',
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
         upx=True,
         upx_exclude=[],
         runtime_tmpdir=None,
-        console=False,  # Disable console for final build
+        console=False,
         disable_windowed_traceback=False,
         argv_emulation=False,
         target_arch=None,
@@ -205,38 +136,19 @@ if sys.platform == "win32":
         entitlements_file=None,
         icon='gui/icons/image.ico'
     )
-elif sys.platform == "darwin":
-    print("[SPEC DEBUG] macOS build - creating single file executable")
+elif sys.platform == 'darwin':
+    # macOS build
     exe = EXE(
         pyz,
         a.scripts,
         a.binaries,
+        a.zipfiles,
         a.datas,
         [],
-        name=app_name,
+        name='PDFUtilities',
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
-        upx=False,  # Disable UPX on macOS to avoid framework issues
-        console=False,
-        disable_windowed_traceback=False,
-        argv_emulation=False,
-        target_arch=None,
-        codesign_identity=None,
-        entitlements_file=None,
-    )
-else:
-    print(f"[SPEC DEBUG] Linux build ({sys.platform}) - creating single file executable")
-    exe = EXE(
-        pyz,
-        a.scripts,
-        a.binaries,
-        a.datas,
-        [],
-        name=app_name,
-        debug=False,
-        bootloader_ignore_signals=False,
-        strip=True,
         upx=True,
         upx_exclude=[],
         runtime_tmpdir=None,
@@ -246,6 +158,29 @@ else:
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
+        icon='gui/icons/image.ico'
     )
-
-sys.setrecursionlimit(sys.getrecursionlimit() * 5) 
+else:
+    # Linux build
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        [],
+        name='PDFUtilities',
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        runtime_tmpdir=None,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        icon='gui/icons/image.ico'
+    ) 

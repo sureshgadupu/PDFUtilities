@@ -491,10 +491,11 @@ class PDFConverterApp(QMainWindow):
 
     def _show_about(self):
         """Show About dialog"""
-        about_text = """
+        current_version = get_version()
+        about_text = f"""
         <div style="color: black;">
         <h2>PDF Utilities</h2>
-        <p><b>Version:</b> 0.0.4</p>
+        <p><b>Version:</b> {current_version}</p>
         <p><b>Description:</b> A comprehensive PDF processing application built with PyQt6.</p>
         <p><b>Features:</b></p>
         <ul>

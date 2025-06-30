@@ -7,11 +7,11 @@ import fitz  # PyMuPDF
 
 
 def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True):
-    """
-    Compress a PDF by recompressing images and optionally removing metadata.
+    """Compress PDF by recompressing images and optionally removing metadata.
+    
     Args:
-        input_path (str): Path to the input PDF.
-        output_path (str): Path to save the compressed PDF.
+        input_path (str): Path to input PDF file.
+        output_path (str): Path to output PDF file.
         image_quality (int): JPEG quality (10-100, higher is better quality/larger size).
         remove_metadata (bool): If True, remove metadata from the PDF.
     Returns:
@@ -19,17 +19,14 @@ def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True
         str: Message about the result.
     """
     try:
-        print(f"[DEBUG] Opening PDF: {input_path}")
         doc = fitz.open(input_path)
         for page_num, page in enumerate(doc):
             images = page.get_images(full=True)
-            print(f"[DEBUG] Page {page_num+1}: {len(images)} images found.")
             for img_index, img in enumerate(images):
                 xref = img[0]
                 base_image = doc.extract_image(xref)
                 image_bytes = base_image["image"]
                 img_ext = base_image["ext"]
-                print(f"[DEBUG]   Image {img_index+1}: xref={xref}, ext={img_ext}, size={len(image_bytes)} bytes")
                 # Only recompress JPEG or PNG images
                 if img_ext.lower() in ["jpeg", "jpg", "png"]:
                     try:
@@ -43,16 +40,12 @@ def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True
                         img_io.seek(0)
                         new_img_bytes = img_io.read()
                         doc.update_image(xref, new_img_bytes)
-                        print(f"[DEBUG]     Recompressed image {img_index+1} at quality {image_quality}.")
                     except Exception as img_e:
                         print(f"[ERROR]     Failed to recompress image {img_index+1}: {img_e}")
         if remove_metadata:
             doc.set_metadata({})
-            print("[DEBUG] Metadata removed.")
-        print(f"[DEBUG] Saving compressed PDF to: {output_path}")
         doc.save(output_path, garbage=4, deflate=True)
         doc.close()
-        print(f"[DEBUG] Compression complete for: {output_path}")
         return True, f"Compressed: {os.path.basename(input_path)}"
     except Exception as e:
         print(f"[ERROR] Exception during compression of {input_path}: {e}")
@@ -285,9 +278,6 @@ def compress_multiple_pdfs(
     target_size_kb: if set, will compress to target size using image quality adjustment.
     Output files are named with _compressed before .pdf, and numbered if needed.
     """
-    print(f"[DEBUG] compress_multiple_pdfs called with {len(pdf_files)} files. Output dir: {output_directory}")
-    print(f"[DEBUG] Compression mode: {compression_mode}, Target size: {target_size_kb} KB")
-
     if not is_ghostscript_available():
         if os.name == "nt":
             msg = "Ghostscript is not installed or not in PATH. Please install Ghostscript."
@@ -311,7 +301,6 @@ def compress_multiple_pdfs(
 
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
-        print(f"[DEBUG] Created output directory: {output_directory}")
 
     total = len(pdf_files)
     successes, failures = [], []
@@ -329,14 +318,12 @@ def compress_multiple_pdfs(
             out_path = os.path.join(output_directory, out_base)
             counter += 1
 
-        print(f"[DEBUG] Compressing {pdf} -> {out_path}")
         if status_callback:
             status_callback(f"Compressing {base} ({idx+1}/{total})...")
 
         try:
             # If target size is specified, use the target size compression function
             if target_size_kb:
-                print(f"[DEBUG] Using target size compression: {target_size_kb} KB")
                 if status_callback:
                     status_callback(f"Compressing to target size: {target_size_kb} KB...")
                 success, message = compress_pdf_to_target_size(pdf, out_path, target_size_kb)
@@ -351,7 +338,6 @@ def compress_multiple_pdfs(
                         successes.append(f"Compressed: {base} - {message}")
             else:
                 # If no target size, use specified compression mode
-                print(f"[DEBUG] Using {compression_mode} compression (no target size)")
                 ghostscript_compress(pdf, out_path, quality=compression_mode)
                 successes.append(f"Compressed: {base}")
 
@@ -365,5 +351,4 @@ def compress_multiple_pdfs(
             if status_callback:
                 status_callback(error_msg)
 
-    print(f"[DEBUG] Compression finished. Successes: {len(successes)}, Failures: {len(failures)}")
     return successes, failures
