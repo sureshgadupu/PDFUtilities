@@ -64,7 +64,13 @@ a = Analysis(
     pathex=[],
     binaries=binaries,
     datas=datas,
-    hiddenimports=['PyQt6.QtSvg'],
+    hiddenimports=[
+        'PyQt6.QtSvg',
+        'PyQt6.QtCore',
+        'PyQt6.QtGui', 
+        'PyQt6.QtWidgets',
+        'PyQt6.sip'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -75,24 +81,23 @@ a = Analysis(
     noarchive=False,
 )
 
-# macOS-specific filtering
+# macOS-specific filtering - only remove truly unwanted modules
 if sys.platform == 'darwin':
-    # Filter out unwanted Qt frameworks and files
+    # Filter out only unwanted Qt frameworks and files (keep essential ones)
     unwanted_patterns = [
         'Qt3D', 'QtQuick3D', 'QtWebEngine', 'QtWebView', 'QtQml', 'QtQuick',
         'QtScxml', 'QtSensors', 'QtPositioning', 'QtLocation', 'QtMultimedia',
         'QtBluetooth', 'QtNfc', 'QtSerialPort', 'QtSerialBus', 'QtNetwork',
-        'QtSql', 'QtTest', 'QtHelp', 'QtDesigner', 'QtUiTools', 'QtXml',
-        'QtSvg', 'QtOpenGL', 'QtOpenGLWidgets', 'QtWidgets', 'QtGui', 'QtCore'
+        'QtSql', 'QtTest', 'QtHelp', 'QtDesigner', 'QtUiTools', 'QtXml'
     ]
     
-    # Filter binaries
+    # Filter binaries - keep essential Qt modules
     bin_excluded_count = 0
     for pattern in unwanted_patterns:
         a.binaries = [x for x in a.binaries if pattern not in x[0]]
         bin_excluded_count += 1
     
-    # Filter datas
+    # Filter datas - keep essential Qt modules  
     data_excluded_count = 0
     for pattern in unwanted_patterns:
         a.datas = [x for x in a.datas if pattern not in x[0]]
@@ -110,6 +115,9 @@ if sys.platform == 'darwin':
                 pass
     except Exception as e:
         pass
+
+# Create PYZ archive
+pyz = PYZ(a.pure, a.zipped_data, cipher=None)
 
 # Platform-specific build configuration
 if sys.platform == 'win32':
