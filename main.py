@@ -452,7 +452,8 @@ class PDFConverterApp(QMainWindow):
             line = QFrame()
             line.setFrameShape(QFrame.Shape.VLine)
             line.setFrameShadow(QFrame.Shadow.Sunken)
-            line.setStyleSheet("background: #b2e0f7; color: #a2d4ec; min-width: 2px; max-width: 2px; border: none; margin: 0px;")
+            # Use a visible color for the separator
+            line.setStyleSheet("background: #b6b9bf; min-width: 2px; max-width: 2px; border: none; margin: 0px;")
             sep_action = QWidgetAction(toolbar)
             sep_action.setDefaultWidget(line)
             toolbar.addAction(sep_action)
