@@ -103,16 +103,31 @@ class PDFConverterApp(QMainWindow):
         """Setup the basic central widget structure without heavy tab initialization"""
         central = QWidget()
         main_layout = QVBoxLayout(central)
-
+        main_layout.setSpacing(2)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        
         # Create tab widget
         self.tab_widget = QTabWidget()
         self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
         self.tab_widget.setDocumentMode(True)
         self.tab_widget.setStyleSheet(
             """
+            QTabWidget {
+                background: #d6f0fa;
+                margin: 0px;
+                padding: 0px;
+            }
             QTabWidget::pane {
                 border: 1px solid #b2e0f7;
                 background: #ffffff;
+                margin: 0px;
+                padding: 0px;
+            }
+            QTabBar {
+                background: #d6f0fa;
+                margin: 0px;
+                padding: 0px;
+                spacing: 0px;
             }
             QTabBar::tab {
                 background: #d6f0fa;
@@ -121,7 +136,7 @@ class PDFConverterApp(QMainWindow):
                 border: 1px solid #b2e0f7;
                 border-bottom: none;
                 border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
+                border-top-right-radius: 4px;               
             }
             QTabBar::tab:selected {
                 background: #ffffff;
@@ -129,6 +144,12 @@ class PDFConverterApp(QMainWindow):
             }
             QTabBar::tab:hover {
                 background: #b7d6fb;
+            }
+            QTabBar::scroller {
+                background: #d6f0fa;
+            }
+            QTabBar QToolButton {
+                background: #d6f0fa;
             }
         """
         )
@@ -142,8 +163,16 @@ class PDFConverterApp(QMainWindow):
         # Apply main window and central widget background
         self.setStyleSheet(
             """
-            QMainWindow {
-                background: #d6f0fa;
+            QMainWindow {                
+                background: #b2e0f7;
+                spacing: 0px;
+                margin: 0px;
+                padding: 0px;
+            }
+            QMainWindow::separator {
+                background: #b2e0f7;
+                width: 0px;
+                height: 0px;
             }
             QWidget {
                 background: #d6f0fa;
@@ -158,10 +187,18 @@ class PDFConverterApp(QMainWindow):
                 background: #b2e0f7;
                 color: #000;
                 font-size: 15px;
+                spacing: 0px;
+                margin: 0px;
+                padding: 0px;
+                border: none;
+                border-bottom: 1px solid #A9A9A9;
             }
             QMenuBar::item {
-                background: transparent;
+                background: #b2e0f7;
                 color: #000;
+                spacing: 0px;
+                margin: 0px;
+                padding: 4px 8px;
             }
             QMenuBar::item:selected {
                 background: #a2d4ec;
@@ -370,6 +407,31 @@ class PDFConverterApp(QMainWindow):
         toolbar = QToolBar()
         toolbar.setMovable(False)
         toolbar.setIconSize(QSize(24, 24))
+        toolbar.setStyleSheet(
+            """
+            QToolBar {
+                background: #b2e0f7;
+                color: #000;
+                spacing: 0px;
+                margin: 0px;
+                padding: 2px;
+                border: none;
+                border-top: none;
+                border-bottom: none;
+            }
+            QToolBar QWidget {
+                background: #b2e0f7;
+            }
+            QToolButton {
+                background: transparent;
+            }
+            QToolBar::separator {
+                background: #b2e0f7;
+                width: 2px;
+                margin: 0px;
+            }
+        """
+        )
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
 
         def add_toolbar_button(icon_path, text, callback):
@@ -390,7 +452,7 @@ class PDFConverterApp(QMainWindow):
             line = QFrame()
             line.setFrameShape(QFrame.Shape.VLine)
             line.setFrameShadow(QFrame.Shadow.Sunken)
-            line.setStyleSheet("background: #a2d4ec; min-width: 2px; max-width: 2px;")
+            line.setStyleSheet("background: #b2e0f7; color: #a2d4ec; min-width: 2px; max-width: 2px; border: none; margin: 0px;")
             sep_action = QWidgetAction(toolbar)
             sep_action.setDefaultWidget(line)
             toolbar.addAction(sep_action)
