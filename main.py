@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QWidgetAction,
     QProgressBar,
+    QSizePolicy,
 )
 
 from compressor import is_ghostscript_available
@@ -110,6 +111,13 @@ class PDFConverterApp(QMainWindow):
         self.tab_widget = QTabWidget()
         self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
         self.tab_widget.setDocumentMode(True)
+
+        # Add a stretching corner widget to fill the empty space
+        corner_widget = QWidget()
+        corner_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        corner_widget.setStyleSheet("background: #d6f0fa;")
+        self.tab_widget.setCornerWidget(corner_widget, Qt.Corner.TopRightCorner)
+
         self.tab_widget.setStyleSheet(
             """
             QTabWidget {
