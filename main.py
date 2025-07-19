@@ -198,15 +198,18 @@ class PDFConverterApp(QMainWindow):
                 padding: 8px 16px;
                 border: 1px solid #b2e0f7;
                 border-bottom: none;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;               
             }
             QTabBar::tab:selected {
                 background: #ffffff;
                 border-bottom: 1px solid #ffffff;
+                border-top: 1px solid #b2e0f7;
             }
             QTabBar::tab:hover {
                 background: #b7d6fb;
+            }
+            QTabBar::tab:selected:hover {
+                background: #ffffff;
+                border-bottom: 1px solid #b7d6fb;
             }
             QTabBar::tab:disabled {
                 background: #d6f0fa;
