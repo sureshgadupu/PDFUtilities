@@ -112,8 +112,7 @@ class PDFConverterApp(QMainWindow):
         self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
         self.tab_widget.setDocumentMode(True)
         
-        # For macOS compatibility - add after all real tabs are created
-        self.spacer_tab_added = False
+
 
         self.tab_widget.setStyleSheet(
             """
@@ -297,30 +296,12 @@ class PDFConverterApp(QMainWindow):
         self.extract_tab.start_btn.clicked.connect(self._start_extract)
         self.convert_to_image_tab.start_btn.clicked.connect(self._start_convert_to_image)
 
-        # Add macOS spacer tab for full-width appearance
-        self._add_macos_spacer_tab()
-
         self.tabs_initialized = True
 
         # Set the first tab (Convert to DOCX) as the default active tab
         self.tab_widget.setCurrentIndex(0)
 
-    def _add_macos_spacer_tab(self):
-        """Add a spacer tab for macOS to create full-width tab bar appearance"""
-        if not self.spacer_tab_added:
-            import platform
-            if platform.system() == "Darwin":  # macOS
-                spacer_widget = QWidget()
-                spacer_widget.setStyleSheet("background: #d6f0fa;")
-                
-                # Add spacer tab with enough width to fill remaining space
-                spacer_index = self.tab_widget.addTab(spacer_widget, "                    ")
-                self.tab_widget.setTabEnabled(spacer_index, False)
-                
-                # Hide the spacer tab text by making it transparent
-                self.tab_widget.tabBar().setTabTextColor(spacer_index, QColor(0, 0, 0, 0))
-                
-                self.spacer_tab_added = True
+
 
     def _check_ghostscript(self):
         """Check for Ghostscript availability (non-blocking)"""
