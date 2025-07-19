@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QSplashScreen,
     QTabWidget,
+    QTabBar,
     QToolBar,
     QToolButton,
     QVBoxLayout,
@@ -81,6 +82,60 @@ class InitializationThread(QThread):
         self.initialization_complete.emit()
 
 
+class StretchableTabBar(QTabBar):
+    """Custom tab bar with a stretchable dummy tab at the end"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.stretch_tab_index = -1
+        self._setup_stretch_tab()
+        
+    def _setup_stretch_tab(self):
+        """Add a stretchable dummy tab at the end"""
+        # Add a dummy tab that will stretch
+        self.stretch_tab_index = self.addTab("")
+        self.setTabEnabled(self.stretch_tab_index, False)
+        self.setTabTextColor(self.stretch_tab_index, QColor(0, 0, 0, 0))  # Transparent text
+        
+    def tabSizeHint(self, index):
+        """Override to make the stretch tab expand to fill remaining space"""
+        if index == self.stretch_tab_index:
+            # Calculate the total width of all real tabs
+            real_tabs_width = 0
+            for i in range(self.count()):
+                if i != self.stretch_tab_index:
+                    real_tabs_width += super().tabSizeHint(i).width()
+            
+            # Get the available width for the tab bar
+            available_width = self.width()
+            
+            # Calculate the stretch tab width to fill remaining space
+            stretch_width = max(0, available_width - real_tabs_width)
+            return QSize(stretch_width, super().tabSizeHint(index).height())
+        else:
+            return super().tabSizeHint(index)
+    
+    def resizeEvent(self, event):
+        """Handle resize events to update stretch tab size"""
+        super().resizeEvent(event)
+        # Force a repaint to update the stretch tab size
+        self.update()
+        
+    def mousePressEvent(self, event):
+        """Prevent clicking on the stretch tab"""
+        tab_index = self.tabAt(event.pos())
+        if tab_index == self.stretch_tab_index:
+            return  # Ignore clicks on stretch tab
+        super().mousePressEvent(event)
+        
+    def mouseDoubleClickEvent(self, event):
+        """Prevent double-clicking on the stretch tab"""
+        tab_index = self.tabAt(event.pos())
+        if tab_index == self.stretch_tab_index:
+            return  # Ignore double-clicks on stretch tab
+        super().mouseDoubleClickEvent(event)
+
+
 class PDFConverterApp(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -107,10 +162,14 @@ class PDFConverterApp(QMainWindow):
         main_layout.setSpacing(2)
         main_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Create tab widget
+        # Create tab widget with custom tab bar
         self.tab_widget = QTabWidget()
         self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
         self.tab_widget.setDocumentMode(True)
+        
+        # Set custom tab bar with stretchable dummy tab
+        self.custom_tab_bar = StretchableTabBar()
+        self.tab_widget.setTabBar(self.custom_tab_bar)
         
 
 
@@ -153,6 +212,10 @@ class PDFConverterApp(QMainWindow):
                 background: #d6f0fa;
                 border: none;
                 color: transparent;
+            }
+            QTabBar::tab:disabled:hover {
+                background: #d6f0fa;
+                border: none;
             }
             QTabBar::scroller {
                 background: #d6f0fa;
@@ -247,6 +310,8 @@ class PDFConverterApp(QMainWindow):
             placeholder_layout.addWidget(loading_label)
 
             self.tab_widget.addTab(placeholder, QIcon(get_resource_path(icon_path)), title)
+        
+        # The stretch tab is automatically added by the custom tab bar
 
     def _initialize_real_tabs(self):
         """Initialize the real tabs with all functionality"""
@@ -262,6 +327,9 @@ class PDFConverterApp(QMainWindow):
         self.convert_to_image_tab = ConvertToImageTab()
 
         # Replace placeholder tabs with real tabs
+        # Note: The stretch tab is at the end, so we need to account for it
+        real_tab_count = 6  # Number of real tabs
+        
         self.tab_widget.removeTab(0)  # Remove Convert to DOCX placeholder
         self.tab_widget.insertTab(0, self.convert_tab, QIcon(get_resource_path("gui/icons/file-text.svg")), "Convert to DOCX")
 
@@ -281,6 +349,9 @@ class PDFConverterApp(QMainWindow):
         self.tab_widget.insertTab(
             5, self.convert_to_image_tab, QIcon(get_resource_path("gui/icons/image.svg")), "Convert to Image"
         )
+        
+        # Update the stretch tab index after all real tabs are added
+        self.custom_tab_bar.stretch_tab_index = real_tab_count
 
         # Connect tab change signal
         self.tab_widget.currentChanged.connect(self._update_start_button_text)
