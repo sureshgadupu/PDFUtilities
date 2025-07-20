@@ -39,6 +39,7 @@ jobs:
         
         # Build the executable
         python build_with_version.py --version $VERSION
+        echo "Note: Ghostscript must be installed system-wide for PDF compression features"
         
     - name: Verify Windows build
       run: |
@@ -101,6 +102,7 @@ jobs:
         # Run the new build script with version embedding
         Write-Host "Running build_with_version.py..."
         python build_with_version.py --version $VERSION
+        Write-Host "Note: Ghostscript must be installed system-wide for PDF compression features"
         
         # Check build result
         $BUILD_EXIT_CODE = $LASTEXITCODE
@@ -191,6 +193,7 @@ jobs:
         
         # Build the executable
         python build_with_version.py --version $VERSION
+        echo "Note: Ghostscript must be installed system-wide for PDF compression features"
         
     - name: Verify Linux build
       run: |
@@ -295,6 +298,7 @@ jobs:
         # Run the new build script with version embedding
         echo "Running build_with_version.py..."
         python build_with_version.py --version $VERSION
+        echo "Note: Ghostscript must be installed system-wide for PDF compression features"
         
         # Check build result
         BUILD_EXIT_CODE=$?

@@ -32,22 +32,8 @@ for icon_file in icon_files:
     if os.path.exists(icon_file):
         datas.append((icon_file, os.path.dirname(icon_file)))
 
-# Collect Ghostscript binaries
+# No bundled binaries - Ghostscript must be installed system-wide
 binaries = []
-gs_dir = 'bin/Ghostscript/Windows'
-if os.path.exists(gs_dir):
-    gs_files = [
-        'gswin32.exe',
-        'gswin32c.exe', 
-        'gswin64.exe',
-        'gswin64c.exe'
-    ]
-    
-    for gs_file in gs_files:
-        gs_path = os.path.join(gs_dir, gs_file)
-        if os.path.exists(gs_path):
-            size = os.path.getsize(gs_path)
-            binaries.append((gs_path, gs_dir))
 
 # macOS-specific exclusions
 excludes = []

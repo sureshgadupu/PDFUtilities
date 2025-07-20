@@ -56,9 +56,18 @@ python main.py
 - **Linux:** Ghostscript must be installed system-wide. See instructions below.
 - **macOS:** Homebrew (for system dependencies)
 
-#### Install Ghostscript on Linux
+#### Install Ghostscript
 
-Ghostscript is required for PDF compression. Please install it using your distribution's package manager:
+Ghostscript is required for PDF compression. Please install it using your system's package manager:
+
+**Windows:**
+
+- Download and install from the official website: https://ghostscript.com/releases/gsdnld.html
+- Or install via Chocolatey: `choco install ghostscript`
+- Or install via Scoop: `scoop install ghostscript`
+- Make sure to add Ghostscript to your system PATH
+
+**Linux:**
 
 - **Ubuntu/Debian:**
   ```bash
@@ -77,6 +86,12 @@ Ghostscript is required for PDF compression. Please install it using your distri
   ```bash
   sudo zypper install ghostscript
   ```
+
+**macOS:**
+
+```bash
+brew install ghostscript
+```
 
 ### Installation
 
@@ -124,8 +139,6 @@ PDFUtilities/
 │   ├── tabs/             # Individual tab implementations
 │   ├── icons/            # Application icons
 │   └── custom_widgets.py # Custom UI components
-├── bin/                   # Binary dependencies
-│   └── Ghostscript/      # Ghostscript binaries
 └── .github/              # GitHub Actions workflows
     └── workflows/        # CI/CD automation
 ```
@@ -179,7 +192,7 @@ This project uses GitHub Actions for automated builds and releases:
 - **PyMuPDF (fitz)**: PDF processing and manipulation
 - **pdf2docx**: PDF to DOCX conversion
 - **Pillow**: Image processing
-- **Ghostscript**: PDF compression (**must be installed system-wide on Linux**)
+- **Ghostscript**: PDF compression (**must be installed system-wide on all platforms**)
 
 ### Development Dependencies
 
@@ -198,7 +211,7 @@ This project is licensed under the **GNU Affero General Public License v3.0 (AGP
 ✅ **Source Code**: Must provide complete source code  
 ✅ **Network Use**: Source access required for network interactions  
 ✅ **Derivative Works**: Modifications must also be AGPL-3.0  
-⚠️ **Ghostscript**: Included Ghostscript is AGPL-3.0 licensed
+⚠️ **Ghostscript**: System Ghostscript dependency is AGPL-3.0 licensed
 
 ### **Why AGPL-3.0?**
 

@@ -172,31 +172,28 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
     return False, f"Target size ({target_size_kb} KB) not achieved. Best size: {final_size:.2f} KB"
 
 
-def get_bundled_ghostscript_path():
-    """Get the path to the bundled Ghostscript executable (Windows only)."""
+def get_system_ghostscript_path():
+    """Get the path to the system-installed Ghostscript executable."""
     if os.name == "nt":
-        if getattr(sys, "frozen", False):
-            # Running as compiled executable
-            if hasattr(sys, "_MEIPASS"):
-                base_path = sys._MEIPASS
-            else:
-                base_path = os.path.dirname(sys.executable)
-        else:
-            base_path = os.path.dirname(os.path.abspath(__file__))
-        gs_dir = os.path.join(base_path, "bin", "Ghostscript", "Windows")
-        # Try 64-bit, then 32-bit
-        gs_exe = os.path.join(gs_dir, "gswin64c.exe")
-        if not os.path.exists(gs_exe):
-            gs_exe = os.path.join(gs_dir, "gswin32c.exe")
-        if os.path.exists(gs_exe) and os.access(gs_exe, os.X_OK):
-            return gs_exe
+        # Check for system-installed Ghostscript
+        gs_path = shutil.which("gswin64c")
+        if gs_path:
+            return gs_path
+        gs_path = shutil.which("gswin32c")
+        if gs_path:
+            return gs_path
+    else:
+        # Unix-like systems
+        gs_path = shutil.which("gs")
+        if gs_path:
+            return gs_path
     return None
 
 
 def is_ghostscript_available():
-    """Check if Ghostscript is available (bundled on Windows, system on Linux/macOS)."""
+    """Check if Ghostscript is available (system installation on all platforms)."""
     if os.name == "nt":
-        return get_bundled_ghostscript_path() is not None or shutil.which("gswin64c") or shutil.which("gswin32c")
+        return shutil.which("gswin64c") is not None or shutil.which("gswin32c") is not None
     else:
         return shutil.which("gs") is not None
 
@@ -204,10 +201,13 @@ def is_ghostscript_available():
 def get_ghostscript_cmd():
     """Get the Ghostscript command to use."""
     if os.name == "nt":
-        gs_path = get_bundled_ghostscript_path()
+        gs_path = shutil.which("gswin64c")
         if gs_path:
             return gs_path
-        return shutil.which("gswin64c") or shutil.which("gswin32c") or "gswin64c"
+        gs_path = shutil.which("gswin32c")
+        if gs_path:
+            return gs_path
+        return "gswin64c"  # fallback, will error if not installed
     else:
         gs_path = shutil.which("gs")
         if gs_path:
