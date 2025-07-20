@@ -63,46 +63,42 @@ def cleanup_dist_folder():
     return True
 
 
-def verify_ghostscript_inclusion():
-    """Verify that Ghostscript files are included in the built executable."""
-    print("\nVerifying Ghostscript inclusion in built executable...")
-
-    dist_path = os.path.join("dist", "PDFUtilities")
-    if not os.path.exists(dist_path):
-        print(f"Warning: Dist folder not found at {dist_path}")
-        return
-
-    # Check for Ghostscript files in the dist folder
-    gs_dir = os.path.join(dist_path, "bin", "Ghostscript", "Windows")
-    if os.path.exists(gs_dir):
-        print(f"+ Ghostscript directory found: {gs_dir}")
-        files = os.listdir(gs_dir)
-        print(f"  Files in directory: {files}")
-
-        # Check specific files
-        expected_files = ["gswin32.exe", "gswin32c.exe", "gswin64.exe", "gswin64c.exe"]
-        for file in expected_files:
-            file_path = os.path.join(gs_dir, file)
-            if os.path.exists(file_path):
-                size = os.path.getsize(file_path)
-                print(f"  + {file}: {size} bytes")
+def verify_ghostscript_availability():
+    """Verify that Ghostscript is available on the system."""
+    print("\nVerifying Ghostscript availability...")
+    
+    try:
+        import shutil
+        if os.name == "nt":
+            gs_path = shutil.which("gswin64c") or shutil.which("gswin32c")
+        else:
+            gs_path = shutil.which("gs")
+        
+        if gs_path:
+            print(f"+ Ghostscript found: {gs_path}")
+            # Test if it can run
+            try:
+                import subprocess
+                result = subprocess.run([gs_path, "--version"], 
+                                     capture_output=True, text=True, timeout=10)
+                if result.returncode == 0:
+                    print(f"  + Ghostscript version: {result.stdout.strip()}")
+                else:
+                    print(f"  - Ghostscript test failed")
+            except Exception as e:
+                print(f"  - Ghostscript test error: {e}")
+        else:
+            print("- Ghostscript not found in system PATH")
+            print("  Please install Ghostscript:")
+            if os.name == "nt":
+                print("  - Download from: https://ghostscript.com/releases/gsdnld.html")
+                print("  - Or install via: choco install ghostscript")
+                print("  - Or install via: scoop install ghostscript")
             else:
-                print(f"  - {file}: MISSING")
-    else:
-        print(f"- Ghostscript directory NOT found: {gs_dir}")
-
-        # Let's see what's actually in the dist folder
-        print("Contents of dist folder:")
-        try:
-            for root, dirs, files in os.walk(dist_path):
-                level = root.replace(dist_path, "").count(os.sep)
-                indent = " " * 2 * level
-                print(f"{indent}{os.path.basename(root)}/")
-                subindent = " " * 2 * (level + 1)
-                for file in files:
-                    print(f"{subindent}{file}")
-        except Exception as e:
-            print(f"Error listing dist contents: {e}")
+                print("  - Linux: Use your package manager (apt, dnf, pacman, etc.)")
+                print("  - macOS: brew install ghostscript")
+    except Exception as e:
+        print(f"Error checking Ghostscript: {e}")
 
 
 def build():
@@ -178,8 +174,8 @@ def build():
 
             # Platform-specific post-build steps
             if system == "Windows":
-                # Verify Ghostscript inclusion
-                verify_ghostscript_inclusion()
+                # Verify Ghostscript availability
+                verify_ghostscript_availability()
             elif system == "Darwin":  # macOS
                 print("\nmacOS build completed successfully!")
                 print("Note: The executable may require security permissions on first run.")

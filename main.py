@@ -380,11 +380,37 @@ class PDFConverterApp(QMainWindow):
     def _check_ghostscript(self):
         """Check for Ghostscript availability (non-blocking)"""
         if not is_ghostscript_available():
-            QMessageBox.warning(
-                self,
-                "Ghostscript Not Found",
-                "Ghostscript is required for PDF compression features. Please ensure Ghostscript is installed on your system.",
-            )
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Ghostscript Not Found")
+            msg_box.setText("Ghostscript is required for PDF compression features. Please ensure Ghostscript is installed on your system.")
+            msg_box.setIcon(QMessageBox.Icon.Warning)
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            # Set the dialog text color to black and style the button
+            msg_box.setStyleSheet("""
+                QMessageBox { 
+                    color: black; 
+                } 
+                QMessageBox QLabel { 
+                    color: black; 
+                }
+                QMessageBox QPushButton {
+                    background-color: #b2e0f7;
+                    color: black;
+                    border: 1px solid #8fc7e6;
+                    border-radius: 4px;
+                    padding: 6px 12px;
+                    font-size: 12px;
+                    min-width: 60px;
+                }
+                QMessageBox QPushButton:hover {
+                    background-color: #a2d4ec;
+                    border-color: #7bb8d6;
+                }
+                QMessageBox QPushButton:pressed {
+                    background-color: #92c8dc;
+                }
+            """)
+            msg_box.exec()
 
     def _setup_menu(self):
         menubar = QMenuBar(self)
@@ -538,7 +564,7 @@ class PDFConverterApp(QMainWindow):
             line.setFrameShape(QFrame.Shape.VLine)
             line.setFrameShadow(QFrame.Shadow.Sunken)
             # Use a visible color for the separator
-            line.setStyleSheet("background: #b6b9bf; min-width: 2px; max-width: 2px; border: none; margin: 0px;")
+            line.setStyleSheet("background: #8fc7e6; min-width: 2px; max-width: 2px; border: none; margin: 0px;")
             sep_action = QWidgetAction(toolbar)
             sep_action.setDefaultWidget(line)
             toolbar.addAction(sep_action)

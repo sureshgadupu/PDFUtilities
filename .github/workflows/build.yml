@@ -37,6 +37,7 @@ jobs:
     - name: Build Windows executable
       run: |
         python build_app.py
+        echo "Note: Ghostscript must be installed system-wide for PDF compression features"
         
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
@@ -149,6 +150,7 @@ jobs:
         ls -la dist/ || echo "dist directory not found"
         echo "=== Looking for any PDFUtilities files ==="
         find . -name "*PDFUtilities*" -type f || echo "No PDFUtilities files found"
+        echo "Note: Ghostscript must be installed system-wide for PDF compression features"
         
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4
@@ -258,6 +260,7 @@ jobs:
         ls -la dist/ || echo "dist directory not found"
         echo "=== Looking for any PDFUtilities files ==="
         find . -name "*PDFUtilities*" || echo "No PDFUtilities files found"
+        echo "Note: Ghostscript must be installed system-wide for PDF compression features"
         
     - name: Upload macOS ARM artifact
       uses: actions/upload-artifact@v4
