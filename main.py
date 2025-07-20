@@ -141,6 +141,10 @@ class PDFConverterApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("PDF Utility App")
         self.resize(1000, 700)
+        
+        # Set application icon
+        app_icon = QIcon(get_resource_path("gui/icons/tools.svg"))
+        self.setWindowIcon(app_icon)
 
         # Initialize components
         self.tabs_initialized = False
@@ -812,6 +816,10 @@ def create_splash_screen():
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    
+    # Set application icon
+    app_icon = QIcon(get_resource_path("gui/icons/tools.svg"))
+    app.setWindowIcon(app_icon)
 
     # Create and show splash screen
     splash = create_splash_screen()
