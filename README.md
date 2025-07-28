@@ -16,6 +16,27 @@ A comprehensive PDF processing application built with PyQt6, offering multiple P
 - **🔒 Privacy**: All processing done locally - no internet required
 - **🖥️ Cross-platform**: Works on Windows and Linux
 
+## 📋 Changelog
+
+### Version 0.0.6 (Latest)
+
+- **🐛 Fixed**: Notification system reliability issues
+- **🔧 Improved**: Error message handling in Convert to DOCX tab
+- **⚡ Enhanced**: Status message consistency across all tabs
+- **🎯 Better UX**: More reliable error feedback when no files are selected
+
+### Version 0.0.5
+
+- **✨ Added**: Initial release with all core PDF processing features
+- **🎨 Added**: Modern PyQt6-based user interface
+- **🔄 Added**: PDF to DOCX conversion
+- **📦 Added**: PDF compression with quality options
+- **🔗 Added**: PDF merging functionality
+- **✂️ Added**: PDF splitting with custom page ranges
+- **📝 Added**: Text extraction from PDFs
+- **🖼️ Added**: PDF to image conversion
+- **🚀 Added**: Batch processing capabilities
+
 ## 🚀 Quick Start
 
 ### Download
