@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
 )
 
 from compressor import is_ghostscript_available
+from gui.notification import NotificationWidget
 from gui.tabs import (
     CompressTab,
     ConvertTab,
@@ -146,8 +147,15 @@ class PDFConverterApp(QMainWindow):
         self.tabs_initialized = False
         self._initialize_ui_components()
 
+        # Set up notification widget
+        self.notification_widget = NotificationWidget(self)
+
         # Check for Ghostscript availability (non-blocking)
         QTimer.singleShot(100, self._check_ghostscript)
+
+    def show_notification(self, message: str, level: str = "info", duration: int = 4000):
+        """Show a toast notification."""
+        self.notification_widget.show_message(message, level, duration)
 
     def _initialize_ui_components(self):
         """Initialize UI components that don't require heavy processing"""
@@ -321,13 +329,13 @@ class PDFConverterApp(QMainWindow):
         if self.tabs_initialized:
             return
 
-        # Create real tabs
-        self.convert_tab = ConvertTab()
-        self.compress_tab = CompressTab()
-        self.merge_tab = MergeTab()
-        self.split_tab = SplitTab()
-        self.extract_tab = ExtractTab()
-        self.convert_to_image_tab = ConvertToImageTab()
+        # Create real tabs, passing the main window as the parent
+        self.convert_tab = ConvertTab(self)
+        self.compress_tab = CompressTab(self)
+        self.merge_tab = MergeTab(self)
+        self.split_tab = SplitTab(self)
+        self.extract_tab = ExtractTab(self)
+        self.convert_to_image_tab = ConvertToImageTab(self)
 
         # Replace placeholder tabs with real tabs
         # Note: The stretch tab is at the end, so we need to account for it
@@ -727,6 +735,11 @@ class PDFConverterApp(QMainWindow):
         msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg_box.setStyleSheet("QPushButton { color: black; }")
         msg_box.exec()
+
+    def resizeEvent(self, event):
+        """Ensure notification widget is repositioned on window resize."""
+        super().resizeEvent(event)
+        self.notification_widget.resizeEvent(event)
 
     def closeEvent(self, event):
         # Stop any active workers

@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QSpinBox,
     QVBoxLayout,
+    QFileDialog,
 )
 
 from workers import (
@@ -33,7 +34,6 @@ class ConvertTab(BaseTab):
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
         super().add_files_to_table(file_paths)
-        self.status_label.setText("")
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
 
@@ -41,18 +41,18 @@ class ConvertTab(BaseTab):
         """Start the PDF to DOCX conversion process"""
         pdf_files = self.get_selected_files()
         if not pdf_files:
-            self.status_label.setText("Please select PDF files to convert.")
+            self.show_notification("Please select PDF files to convert.", "error", duration=2000)
             return
 
         output_dir = self.get_output_directory()
         if not output_dir:
-            self.status_label.setText("Please select an output directory.")
+            self.show_notification("Please select an output directory.", "error", duration=2000)
             return
 
         # Create and start worker
         self.worker = ConversionWorker(pdf_files, output_dir, parent=self)
         self.worker.progress.connect(self._update_progress)
-        self.worker.status_update.connect(self._update_status)
+        self.worker.status_update.connect(self.show_notification)  # Connect directly
         self.worker.finished.connect(self._handle_conversion_finished)
         self.worker.error.connect(self._handle_conversion_error)
         self.worker.start()
@@ -61,7 +61,7 @@ class ConvertTab(BaseTab):
         self.start_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Starting conversion...")
+        self.show_notification("Starting conversion...", "info")
 
     def _update_progress(self, value):
         """Update progress bar"""
@@ -69,7 +69,7 @@ class ConvertTab(BaseTab):
 
     def _update_status(self, message):
         """Update status label"""
-        self.status_label.setText(message)
+        self.show_notification(message, "info")
 
     def _handle_conversion_finished(self, successful_messages, failed_messages):
         """Handle conversion completion"""
@@ -77,17 +77,17 @@ class ConvertTab(BaseTab):
         self.progress_bar.setVisible(False)
 
         if successful_messages and not failed_messages:
-            self.status_label.setText("Conversion completed successfully!")
+            self.show_notification("Conversion completed successfully!", "success")
         elif successful_messages and failed_messages:
-            self.status_label.setText(f"Conversion completed with {len(failed_messages)} errors.")
+            self.show_notification(f"Conversion completed with {len(failed_messages)} errors.", "warning", duration=2000)
         else:
-            self.status_label.setText("Conversion failed.")
+            self.show_notification("Conversion failed.", "error", duration=2000)
 
     def _handle_conversion_error(self, error_message):
         """Handle conversion error"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        self.status_label.setText(f"Error: {error_message}")
+        self.show_notification(f"Error: {error_message}", "error", duration=2000)
 
     def stop_active_conversion(self):
         """Stop any active conversion process"""
@@ -96,7 +96,7 @@ class ConvertTab(BaseTab):
             self.worker.wait()
             self.start_btn.setEnabled(True)
             self.progress_bar.setVisible(False)
-            self.status_label.setText("Conversion stopped.")
+            self.show_notification("Conversion stopped.", "info")
 
 
 class CompressTab(BaseTab):
@@ -162,7 +162,6 @@ class CompressTab(BaseTab):
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
         super().add_files_to_table(file_paths)
-        self.status_label.setText("")
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
         self.generated_files = []  # Clear tracked files
@@ -171,12 +170,12 @@ class CompressTab(BaseTab):
         """Start the PDF compression process"""
         pdf_files = self.get_selected_files()
         if not pdf_files:
-            self.status_label.setText("Please select PDF files to compress.")
+            self.show_notification("Please select PDF files to compress.", "error", duration=2000)
             return
 
         output_dir = self.get_output_directory()
         if not output_dir:
-            self.status_label.setText("Please select an output directory.")
+            self.show_notification("Please select an output directory.", "error", duration=2000)
             return
 
         # Get compression settings
@@ -198,7 +197,7 @@ class CompressTab(BaseTab):
                     target_size *= 1024  # Convert MB to KB
                 target_size_kb = int(target_size)
             except ValueError:
-                self.status_label.setText("Invalid target size value.")
+                self.show_notification("Invalid target size value.", "error", duration=2000)
                 return
 
         # Create and start worker
@@ -206,7 +205,7 @@ class CompressTab(BaseTab):
             pdf_files, output_dir, compression_mode=compression_mode, target_size_kb=target_size_kb, parent=self
         )
         self.worker.progress.connect(self._update_progress)
-        self.worker.status_update.connect(self._update_status)
+        self.worker.status_update.connect(self.show_notification)
         self.worker.finished.connect(self._handle_compression_finished)
         self.worker.error.connect(self._handle_compression_error)
         self.worker.start()
@@ -215,7 +214,7 @@ class CompressTab(BaseTab):
         self.start_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Starting compression...")
+        self.show_notification("Starting compression...", "info")
         self.generated_files = []  # Reset tracked files
 
     def _update_progress(self, value):
@@ -224,7 +223,7 @@ class CompressTab(BaseTab):
 
     def _update_status(self, message):
         """Update status label"""
-        self.status_label.setText(message)
+        self.show_notification(message, "info")
         # Track generated files from status messages
         if "Saved compressed file:" in message:
             file_path = message.split("Saved compressed file:")[1].strip()
@@ -236,28 +235,28 @@ class CompressTab(BaseTab):
         self.progress_bar.setVisible(False)
 
         if successful_messages and not failed_messages:
-            self.status_label.setText("Compression completed successfully!")
+            self.show_notification("Compression completed successfully!", "success")
         elif successful_messages and failed_messages:
             # Check if failures are actual failures or just target size not achieved
             actual_failures = [msg for msg in failed_messages if "Failed to compress file" in msg]
             if actual_failures:
-                self.status_label.setText(f"Compression completed with {len(actual_failures)} errors.")
+                self.show_notification(f"Compression completed with {len(actual_failures)} errors.", "warning", duration=2000)
                 self._cleanup_generated_files()  # Clean up on actual failures
             else:
                 # All "failures" are just target size not achieved, but files were compressed
-                self.status_label.setText("Compression completed! Some files could not reach target size.")
+                self.show_notification("Compression completed! Some files could not reach target size.", "warning", duration=2000)
         else:
-            self.status_label.setText("Compression failed.")
+            self.show_notification("Compression failed.", "error", duration=2000)
             self._cleanup_generated_files()  # Clean up on complete failure
 
     def _handle_compression_error(self, error_message):
         """Handle compression error"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        self.status_label.setText(f"Error: {error_message}")
+        self.show_notification(f"Error: {error_message}", "error", duration=2000)
         
         # Only clean up on critical errors, not on target size issues
-        if "Critical error" in error_message or "Failed to create output directory" in error_message:
+        if "target size" not in error_message.lower():
             self._cleanup_generated_files()
 
     def _cleanup_generated_files(self):
@@ -327,35 +326,36 @@ class MergeTab(BaseTab):
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
         super().add_files_to_table(file_paths)
-        self.status_label.setText("")
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
 
     def _start_merge(self):
-        """Start the PDF merging process"""
+        """Start the PDF merge process"""
         pdf_files = self.get_selected_files()
         if not pdf_files:
-            self.status_label.setText("Please select PDF files to merge.")
+            self.show_notification("Please select PDF files to merge.", "error", duration=2000)
             return
 
         if len(pdf_files) < 2:
-            self.status_label.setText("Please select at least 2 PDF files to merge.")
+            self.show_notification("Please select at least 2 PDF files to merge.", "error", duration=2000)
             return
 
         output_dir = self.get_output_directory()
         if not output_dir:
-            self.status_label.setText("Please select an output directory.")
+            self.show_notification("Please select an output directory.", "error", duration=2000)
             return
 
-        # Get first filename and create merged filename
-        first_file = os.path.basename(pdf_files[0])
-        base_name = os.path.splitext(first_file)[0]
-        output_file = os.path.join(output_dir, f"{base_name}_merged.pdf")
+        # Let user choose output filename
+        output_filename, _ = QFileDialog.getSaveFileName(
+            self, "Save Merged PDF", os.path.join(output_dir, "merged_document.pdf"), "PDF Files (*.pdf)"
+        )
+        if not output_filename:
+            return
 
         # Create and start worker
-        self.worker = MergeWorker(pdf_files, output_file, parent=self)
+        self.worker = MergeWorker(pdf_files, output_filename, parent=self)
         self.worker.progress.connect(self._update_progress)
-        self.worker.status_update.connect(self._update_status)
+        self.worker.status_update.connect(self.show_notification)
         self.worker.finished.connect(self._handle_merge_finished)
         self.worker.error.connect(self._handle_merge_error)
         self.worker.start()
@@ -364,7 +364,7 @@ class MergeTab(BaseTab):
         self.start_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Starting merge...")
+        self.show_notification("Starting merge...", "info")
 
     def _update_progress(self, value):
         """Update progress bar"""
@@ -372,7 +372,7 @@ class MergeTab(BaseTab):
 
     def _update_status(self, message):
         """Update status label"""
-        self.status_label.setText(message)
+        self.show_notification(message, "info")
 
     def _handle_merge_finished(self, success):
         """Handle merge completion"""
@@ -380,15 +380,15 @@ class MergeTab(BaseTab):
         self.progress_bar.setVisible(False)
 
         if success:
-            self.status_label.setText("PDFs merged successfully!")
+            self.show_notification("PDFs merged successfully!", "success")
         else:
-            self.status_label.setText("Merge failed.")
+            self.show_notification("Merge failed.", "error", duration=2000)
 
     def _handle_merge_error(self, error_message):
         """Handle merge error"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        self.status_label.setText(f"Error: {error_message}")
+        self.show_notification(f"Error: {error_message}", "error", duration=2000)
 
 
 class SplitTab(BaseTab):
@@ -480,33 +480,32 @@ class SplitTab(BaseTab):
             raise ValueError(f"Invalid page range format: {str(e)}")
 
     def _start_split(self):
-        """Start the PDF splitting process"""
+        """Start the PDF split process"""
         pdf_files = self.get_selected_files()
         if not pdf_files:
-            self.status_label.setText("Please select PDF files to split.")
+            self.show_notification("Please select PDF files to split.", "error", duration=2000)
             return
 
         output_dir = self.get_output_directory()
         if not output_dir:
-            self.status_label.setText("Please select an output directory.")
+            self.show_notification("Please select an output directory.", "error", duration=2000)
             return
 
-        # Get split mode and validate custom range if needed
         split_mode = self.mode_combo.currentText()
-        page_ranges = None
+        page_ranges = []
 
         if split_mode == "Custom Range":
             range_str = self.range_input.text().strip()
             if not range_str:
-                self.status_label.setText("Please enter page ranges.")
+                self.show_notification("Please enter page ranges.", "error", duration=2000)
                 return
             try:
                 page_ranges = self._parse_page_ranges(range_str)
                 if not page_ranges:
-                    self.status_label.setText("No valid page numbers found.")
+                    self.show_notification("No valid page numbers found.", "error", duration=2000)
                     return
             except ValueError as e:
-                self.status_label.setText(f"Invalid page range: {str(e)}")
+                self.show_notification(f"Invalid page range: {str(e)}", "error", duration=2000)
                 return
 
         # Create and start worker
@@ -514,7 +513,7 @@ class SplitTab(BaseTab):
             pdf_files=pdf_files, output_directory=output_dir, split_mode=split_mode, page_ranges=page_ranges, parent=self
         )
         self.worker.progress.connect(self._update_progress)
-        self.worker.status_update.connect(self._update_status)
+        self.worker.status_update.connect(self.show_notification)
         self.worker.finished.connect(self._handle_split_finished)
         self.worker.error.connect(self._handle_split_error)
         self.worker.start()
@@ -523,7 +522,7 @@ class SplitTab(BaseTab):
         self.start_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Starting split...")
+        self.show_notification("Starting split...", "info")
 
     def _update_progress(self, value):
         """Update progress bar"""
@@ -531,27 +530,26 @@ class SplitTab(BaseTab):
 
     def _update_status(self, message):
         """Update status label"""
-        self.status_label.setText(message)
+        self.show_notification(message, "info")
 
     def _handle_split_finished(self, success):
         """Handle split completion"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         if success:
-            self.status_label.setText("PDF files have been split successfully.")
+            self.show_notification("PDF files have been split successfully.", "success")
         else:
-            self.status_label.setText("Some files could not be split.")
+            self.show_notification("Some files could not be split.", "error", duration=2000)
 
     def _handle_split_error(self, error_message):
         """Handle split error"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        self.status_label.setText(f"Error: {error_message}")
+        self.show_notification(f"Error: {error_message}", "error", duration=2000)
 
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
         super().add_files_to_table(file_paths)
-        self.status_label.setText("")
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
         if self.mode_combo.currentText() == "Custom Range":
@@ -638,12 +636,12 @@ class ExtractTab(BaseTab):
         """Start the PDF extraction process"""
         pdf_files = self.get_selected_files()
         if not pdf_files:
-            QMessageBox.warning(self, "No Files", "Please select PDF files to extract from.")
+            self.show_notification("Please select PDF files to extract text from.", "error", duration=2000)
             return
 
         output_dir = self.get_output_directory()
         if not output_dir:
-            QMessageBox.warning(self, "No Output Directory", "Please select an output directory.")
+            self.show_notification("Please select an output directory.", "error", duration=2000)
             return
 
         # Get extraction settings
@@ -655,15 +653,15 @@ class ExtractTab(BaseTab):
         if page_range == "Custom Range":
             range_str = self.range_input.text().strip()
             if not range_str:
-                QMessageBox.warning(self, "Invalid Range", "Please enter page ranges.")
+                self.show_notification("Please enter page ranges.", "error", duration=2000)
                 return
             try:
                 page_ranges = self._parse_page_ranges(range_str)
                 if not page_ranges:
-                    QMessageBox.warning(self, "Invalid Range", "No valid page numbers found.")
+                    self.show_notification("No valid page numbers found.", "error", duration=2000)
                     return
             except ValueError as e:
-                QMessageBox.warning(self, "Invalid Range", str(e))
+                self.show_notification(f"Invalid page range: {str(e)}", "error", duration=2000)
                 return
 
         # Create and start worker
@@ -676,7 +674,7 @@ class ExtractTab(BaseTab):
             parent=self,
         )
         self.worker.progress.connect(self._update_progress)
-        self.worker.status_update.connect(self._update_status)
+        self.worker.status_update.connect(self.show_notification)
         self.worker.finished.connect(self._handle_extract_finished)
         self.worker.error.connect(self._handle_extract_error)
         self.worker.start()
@@ -685,7 +683,7 @@ class ExtractTab(BaseTab):
         self.start_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Starting extraction...")
+        self.show_notification("Starting extraction...", "info")
 
     def _update_progress(self, value):
         """Update progress bar"""
@@ -693,27 +691,26 @@ class ExtractTab(BaseTab):
 
     def _update_status(self, message):
         """Update status label"""
-        self.status_label.setText(message)
+        self.show_notification(message, "info")
 
     def _handle_extract_finished(self, success):
         """Handle extraction completion"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         if success:
-            self.status_label.setText("Extraction completed successfully!")
+            self.show_notification("Extraction completed successfully!", "success")
         else:
-            self.status_label.setText("Extraction completed with errors. Check the status messages above.")
+            self.show_notification("Extraction completed with errors. Check the status messages above.", "error", duration=2000)
 
     def _handle_extract_error(self, error_message):
         """Handle extraction error"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        self.status_label.setText(f"Error: {error_message}")
+        self.show_notification(f"Error: {error_message}", "error", duration=2000)
 
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
         super().add_files_to_table(file_paths)
-        self.status_label.setText("")
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
         if self.range_combo.currentText() == "Custom Range":
@@ -801,15 +798,15 @@ class ConvertToImageTab(BaseTab):
         """Start the PDF to image conversion process"""
         pdf_files = self.get_selected_files()
         if not pdf_files:
-            QMessageBox.warning(self, "No Files", "Please select PDF files to convert.")
+            self.show_notification("Please select PDF files to convert.", "error", duration=2000)
             return
 
         output_dir = self.get_output_directory()
         if not output_dir:
-            QMessageBox.warning(self, "No Output Directory", "Please select an output directory.")
+            self.show_notification("Please select an output directory.", "error", duration=2000)
             return
 
-        # Get conversion settings
+        # Get settings
         image_format = self.format_combo.currentText().lower()
         dpi = self.dpi_spin.value()
         result_type = self.result_type_combo.currentText()
@@ -826,7 +823,7 @@ class ConvertToImageTab(BaseTab):
             parent=self,
         )
         self.worker.progress.connect(self._update_progress)
-        self.worker.status_update.connect(self._update_status)
+        self.worker.status_update.connect(self.show_notification)
         self.worker.finished.connect(self._handle_conversion_finished)
         self.worker.error.connect(self._handle_conversion_error)
         self.worker.start()
@@ -835,7 +832,7 @@ class ConvertToImageTab(BaseTab):
         self.start_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Starting conversion...")
+        self.show_notification("Starting conversion...", "info")
 
     def _update_progress(self, value):
         """Update progress bar"""
@@ -843,27 +840,26 @@ class ConvertToImageTab(BaseTab):
 
     def _update_status(self, message):
         """Update status label"""
-        self.status_label.setText(message)
+        self.show_notification(message, "info")
 
     def _handle_conversion_finished(self, success):
         """Handle conversion completion"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         if success:
-            self.status_label.setText("Conversion completed successfully!")
+            self.show_notification("Conversion completed successfully!", "success")
         else:
-            self.status_label.setText("Conversion completed with errors. Check the status messages above.")
+            self.show_notification("Conversion completed with errors. Check the status messages above.", "error", duration=2000)
 
     def _handle_conversion_error(self, error_message):
         """Handle conversion error"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        self.status_label.setText(f"Error: {error_message}")
+        self.show_notification(f"Error: {error_message}", "error", duration=2000)
 
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
         super().add_files_to_table(file_paths)
-        self.status_label.setText("")
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
 
@@ -926,18 +922,21 @@ class ExtractTextTab(BaseTab):
         """Start the text extraction process"""
         pdf_files = self.get_selected_files()
         if not pdf_files:
-            self.status_label.setText("Please select PDF files to extract text from.")
+            self.show_notification("Please select PDF files to extract text from.", "error", duration=2000)
             return
 
         output_dir = self.get_output_directory()
         if not output_dir:
-            self.status_label.setText("Please select an output directory.")
+            self.show_notification("Please select an output directory.", "error", duration=2000)
             return
 
-        # Get extraction options
-        mode = self.mode_combo.currentText()
-        page_range = self.page_range.text() if mode == "Page Range" else None
-        output_format = self.format_combo.currentText().lower()
+        # Get settings
+        mode_index = self.mode_combo.currentIndex()
+        if mode_index == 0:  # Simple
+            mode = "layout" if self.layout_radio.isChecked() else "simple"
+        else:  # OCR
+            # This part can be expanded with OCR options if needed
+            mode = "ocr"
 
         # Create and start worker
         self.worker = ExtractTextWorker(
@@ -949,7 +948,7 @@ class ExtractTextTab(BaseTab):
             parent=self,
         )
         self.worker.progress.connect(self._update_progress)
-        self.worker.status_update.connect(self._update_status)
+        self.worker.status_update.connect(self.show_notification)
         self.worker.finished.connect(self._handle_extraction_finished)
         self.worker.error.connect(self._handle_extraction_error)
         self.worker.start()
@@ -958,7 +957,7 @@ class ExtractTextTab(BaseTab):
         self.start_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Starting extraction...")
+        self.show_notification("Starting extraction...", "info")
 
     def _update_progress(self, value):
         """Update progress bar"""
@@ -966,26 +965,25 @@ class ExtractTextTab(BaseTab):
 
     def _update_status(self, message):
         """Update status label"""
-        self.status_label.setText(message)
+        self.show_notification(message, "info")
 
     def _handle_extraction_finished(self, success):
         """Handle extraction completion"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         if success:
-            self.status_label.setText("Extraction completed successfully!")
+            self.show_notification("Extraction completed successfully!", "success")
         else:
-            self.status_label.setText("Extraction completed with errors. Check the status messages above.")
+            self.show_notification("Extraction completed with errors. Check the status messages above.", "error", duration=2000)
 
     def _handle_extraction_error(self, error_message):
         """Handle extraction error"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        self.status_label.setText(f"Error: {error_message}")
+        self.show_notification(f"Error: {error_message}", "error", duration=2000)
 
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
         super().add_files_to_table(file_paths)
-        self.status_label.setText("")
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
