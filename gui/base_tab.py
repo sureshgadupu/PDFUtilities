@@ -21,6 +21,12 @@ class BaseTab(QWidget):
         super().__init__(parent)
         self._setup_common_ui()
         self._apply_common_styles()
+        # Store a reference to the main window's notification method
+        self.show_notification = getattr(parent, "show_notification", self._fallback_notification)
+
+    def _fallback_notification(self, message: str, level: str = "info", duration: int = 4000):
+        """A fallback in case the notification method isn't available."""
+        print(f"[{level.upper()}] Notification: {message}")
 
     def _setup_common_ui(self):
         layout = QVBoxLayout(self)
@@ -57,11 +63,6 @@ class BaseTab(QWidget):
         """
         )
         layout.addWidget(self.progress_bar)
-
-        # Status Label
-        self.status_label = QLabel("")
-        self.status_label.setStyleSheet("color: #000; font-size: 14px;")
-        layout.addWidget(self.status_label)
 
         # Start Button
         start_layout = QHBoxLayout()
