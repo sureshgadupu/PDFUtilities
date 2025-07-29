@@ -469,7 +469,7 @@ class PDFConverterApp(QMainWindow):
         )
 
         # Add Edit menu items
-        delete_action = QAction("Delete", self)
+        delete_action = QAction("Remove", self)
         delete_action.setShortcut("Delete")
         delete_action.triggered.connect(self._delete_selected)
         edit_menu.addAction(delete_action)
@@ -581,7 +581,7 @@ class PDFConverterApp(QMainWindow):
         add_separator()
         self.add_folder_btn = add_toolbar_button("gui/icons/folder-plus.svg", "Add Folder", self._add_folder)
         add_separator()
-        self.delete_btn = add_toolbar_button("gui/icons/trash-2.svg", "Delete", self._delete_selected)
+        self.delete_btn = add_toolbar_button("gui/icons/trash-2.svg", "Remove", self._delete_selected)
         add_separator()
         self.clear_btn = add_toolbar_button("gui/icons/x-circle.svg", "Clear All", self._clear_all)
         add_separator()
@@ -723,7 +723,7 @@ class PDFConverterApp(QMainWindow):
         <h3>Keyboard Shortcuts</h3>
         <p><b>Ctrl+O:</b> Add File</p>
         <p><b>Ctrl+Shift+O:</b> Add Folder</p>
-        <p><b>Delete:</b> Remove selected files</p>
+        <p><b>Remove:</b> Remove selected files</p>
         <p><b>Ctrl+Shift+D:</b> Clear all files</p>
         <p><b>Ctrl+Q:</b> Exit application</p>
         <p><b>F1:</b> Show this documentation</p>
