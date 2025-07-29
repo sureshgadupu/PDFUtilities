@@ -274,7 +274,7 @@ class PDFConverterApp(QMainWindow):
                 margin: 0px;
                 padding: 0px;
                 border: none;
-                border-bottom: 1px solid #A9A9A9;
+                border-bottom: none;
             }
             QMenuBar::item {
                 background: #b2e0f7;
@@ -535,7 +535,7 @@ class PDFConverterApp(QMainWindow):
                 margin: 0px;
                 padding: 2px;
                 border: none;
-                border-top: none;
+                border-top: 1px solid #8fc7e6;
                 border-bottom: none;
             }
             QToolBar QWidget {
