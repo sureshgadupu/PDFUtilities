@@ -128,7 +128,7 @@ if sys.platform == 'win32':
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='gui/icons/image.ico'
+        icon='gui/icons/favicon.ico'
     )
 elif sys.platform == 'darwin':
     # macOS build
@@ -152,7 +152,7 @@ elif sys.platform == 'darwin':
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='gui/icons/image.ico'
+        icon='gui/icons/favicon.ico'
     )
 else:
     # Linux build
@@ -176,5 +176,5 @@ else:
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='gui/icons/image.ico'
+        icon='gui/icons/favicon.ico'
     ) 
