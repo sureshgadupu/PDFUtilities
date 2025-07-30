@@ -141,6 +141,7 @@ class PDFConverterApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PDF Utility App")
+        self.setWindowIcon(QIcon(get_resource_path("gui/icons/tools.svg")))
         self.resize(1000, 700)
 
         # Initialize components
