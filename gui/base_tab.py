@@ -23,6 +23,8 @@ class BaseTab(QWidget):
         self._apply_common_styles()
         # Store a reference to the main window's notification method
         self.show_notification = getattr(parent, "show_notification", self._fallback_notification)
+        # Store reference to the main window for accessing shared table
+        self.main_window = parent
 
     def _fallback_notification(self, message: str, level: str = "info", duration: int = 4000):
         """A fallback in case the notification method isn't available."""
@@ -30,21 +32,26 @@ class BaseTab(QWidget):
 
     def _setup_common_ui(self):
         layout = QVBoxLayout(self)
+        layout.setSpacing(6)
 
-        # File Table
-        self.file_table = QTableWidget(0, 2)
-        self.file_table.setHorizontalHeaderLabels(["File Name", "Size"])
-        self.file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        self.file_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.file_table.setShowGrid(True)
-        self.file_table.setAlternatingRowColors(True)
-        # Disable sorting for all tables
-        self.file_table.setSortingEnabled(False)
-        layout.addWidget(self.file_table)
+        # Section 1: Action Button (Fixed position at top)
+        start_layout = QHBoxLayout()
+        start_layout.addStretch()
+        self._create_start_button()
+        start_layout.addWidget(self.start_btn)
+        layout.addLayout(start_layout)
 
-        # Progress Bar
+        # Section 2: Tab-specific controls container (Fixed middle section)
+        self.tab_controls_container = QWidget()
+        self.tab_controls_layout = QVBoxLayout(self.tab_controls_container)
+        self.tab_controls_layout.setSpacing(6)
+        layout.addWidget(self.tab_controls_container)
+
+        # Section 3: Output folder controls (Fixed position)
+        self._setup_output_folder_section()
+        layout.addLayout(self.output_folder_layout)
+
+        # Section 4: Progress bar (Fixed position at bottom)
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
         self.progress_bar.setStyleSheet(
@@ -64,9 +71,11 @@ class BaseTab(QWidget):
         )
         layout.addWidget(self.progress_bar)
 
-        # Start Button
-        start_layout = QHBoxLayout()
-        start_layout.addStretch()
+        # Store layout reference for adding controls later
+        self.main_layout = layout
+
+    def _create_start_button(self):
+        """Create the Start button with consistent styling"""
         self.start_btn = QPushButton("Start")
         self.start_btn.setStyleSheet(
             """
@@ -88,21 +97,18 @@ class BaseTab(QWidget):
             }
         """
         )
-        start_layout.addWidget(self.start_btn)
-        layout.addLayout(start_layout)
+        return self.start_btn
 
+    def _setup_output_folder_section(self):
+        """Setup output folder controls in a separate method"""
+        self.output_folder_layout = QHBoxLayout()
+        
         # Output Folder Label
-        output_folder_label = QLabel("Output Folder")
+        output_folder_label = QLabel("Output Folder:")
         output_folder_label.setStyleSheet(
-            "font-weight: bold; font-size: 15px; margin-top: 12px; margin-bottom: 4px;color: #000;"
+            "font-weight: bold; font-size: 11px; margin-top: 6px; margin-bottom: 3px;color: #000;"
         )
-        layout.addWidget(output_folder_label)
-
-        # Output Folder Selection
-        output_layout = QHBoxLayout()
-        output_label = QLabel("Output:")
-        output_label.setStyleSheet("color: #000;")
-        output_layout.addWidget(output_label)
+        self.output_folder_layout.addWidget(output_folder_label)
 
         # Radio buttons for output folder
         self.same_folder_radio = QRadioButton("Same as input")
@@ -112,6 +118,7 @@ class BaseTab(QWidget):
                 color: #000;
                 padding: 4px;
                 margin-right: 8px;
+                font-size: 11px;
             }
             QRadioButton::indicator {
                 width: 16px;
@@ -135,6 +142,7 @@ class BaseTab(QWidget):
                 color: #000;
                 padding: 4px;
                 margin-right: 8px;
+                font-size: 11px;
             }
             QRadioButton::indicator {
                 width: 16px;
@@ -152,12 +160,26 @@ class BaseTab(QWidget):
         """
         )
         self.same_folder_radio.setChecked(True)
-        output_layout.addWidget(self.same_folder_radio)
-        output_layout.addWidget(self.custom_folder_radio)
+        self.output_folder_layout.addWidget(self.same_folder_radio)
+        self.output_folder_layout.addWidget(self.custom_folder_radio)
+        
         self.output_path = QLineEdit()
         self.output_path.setPlaceholderText("Select output folder...")
         self.output_path.setEnabled(False)
-        output_layout.addWidget(self.output_path)
+        self.output_path.setStyleSheet(
+            """
+            QLineEdit {
+                background: #fff;
+                color: #000;
+                border: 1px solid #b2e0f7;
+                border-radius: 6px;
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+        """
+        )
+        self.output_folder_layout.addWidget(self.output_path)
+        
         self.browse_btn = QPushButton("Browse")
         self.browse_btn.setStyleSheet(
             """
@@ -166,10 +188,10 @@ class BaseTab(QWidget):
                 color: #000;
                 border: none;
                 border-radius: 4px;
-                font-size: 14px;
-                padding: 4px 16px;
-                min-width: 80px;
-                min-height: 24px;
+                font-size: 11px;
+                padding: 4px 12px;
+                min-width: 60px;
+                min-height: 20px;
             }
             QPushButton:hover {
                 background: #009fd6;
@@ -181,9 +203,18 @@ class BaseTab(QWidget):
         )
         self.browse_btn.setEnabled(False)
         self.browse_btn.clicked.connect(self._browse_folder)
-        output_layout.addWidget(self.browse_btn)
-        layout.addLayout(output_layout)
+        self.output_folder_layout.addWidget(self.browse_btn)
+        
+        # Connect radio button toggle
         self.custom_folder_radio.toggled.connect(self._toggle_custom_output)
+
+    def add_output_folder_controls(self):
+        """This method is now handled in _setup_common_ui() for consistent layout"""
+        pass
+
+    def add_tab_controls(self, controls_layout):
+        """Add tab-specific controls to the dedicated container"""
+        self.tab_controls_layout.addLayout(controls_layout)
 
     def _apply_common_styles(self):
         # Apply the same styles from main_window.py
@@ -259,84 +290,30 @@ class BaseTab(QWidget):
             return f"{size_bytes/1024/1024:.2f} MB"
 
     def add_file_to_table(self, file_path):
-        """Add a file to the table with its name and size"""
-        try:
-            file_name = os.path.basename(file_path)
-            file_size = os.path.getsize(file_path)
-            row = self.file_table.rowCount()
-
-            # Disable sorting and updates temporarily
-            self.file_table.setUpdatesEnabled(False)
-
-            # Insert row and set items
-            self.file_table.insertRow(row)
-            name_item = QTableWidgetItem(file_name)
-            name_item.setToolTip(file_path)
-            size_item = QTableWidgetItem(self._format_size(file_size))
-
-            self.file_table.setItem(row, 0, name_item)
-            self.file_table.setItem(row, 1, size_item)
-
-            # Re-enable sorting and updates
-            self.file_table.setUpdatesEnabled(True)
-
-        except Exception as e:
-            print(f"Error adding file {file_path}: {str(e)}")
+        """Add a file to the shared table with its name and size"""
+        if self.main_window:
+            self.main_window.add_file_to_table(file_path)
 
     def add_files_to_table(self, file_paths):
-        """Add multiple files to the table efficiently"""
-        try:
-            # Disable sorting and updates temporarily
-            self.file_table.setUpdatesEnabled(False)
-
-            # Prepare all items first
-            items_to_add = []
-            for file_path in file_paths:
-                try:
-                    file_name = os.path.basename(file_path)
-                    file_size = os.path.getsize(file_path)
-                    name_item = QTableWidgetItem(file_name)
-                    name_item.setToolTip(file_path)
-                    size_item = QTableWidgetItem(self._format_size(file_size))
-                    items_to_add.append((name_item, size_item))
-                except Exception as e:
-                    print(f"Error processing file {file_path}: {str(e)}")
-
-            # Add all rows at once
-            start_row = self.file_table.rowCount()
-            self.file_table.setRowCount(start_row + len(items_to_add))
-
-            # Set all items
-            for i, (name_item, size_item) in enumerate(items_to_add):
-                self.file_table.setItem(start_row + i, 0, name_item)
-                self.file_table.setItem(start_row + i, 1, size_item)
-
-            # Re-enable sorting and updates
-            self.file_table.setUpdatesEnabled(True)
-
-        except Exception as e:
-            print(f"Error adding files: {str(e)}")
-            # Make sure to re-enable updates even if there's an error
-            self.file_table.setUpdatesEnabled(True)
+        """Add multiple files to the shared table efficiently"""
+        if self.main_window:
+            self.main_window.add_files_to_table(file_paths)
 
     def remove_selected_files(self):
-        """Remove selected files from the table"""
-        selected = self.file_table.selectionModel().selectedRows()
-        for index in sorted(selected, reverse=True):
-            self.file_table.removeRow(index.row())
+        """Remove selected files from the shared table"""
+        if self.main_window:
+            self.main_window.remove_selected_files()
 
     def clear_all_files(self):
-        """Clear all files from the table"""
-        self.file_table.setRowCount(0)
+        """Clear all files from the shared table"""
+        if self.main_window:
+            self.main_window.clear_all_files()
 
     def get_selected_files(self):
-        """Get list of selected file paths"""
-        selected_files = []
-        for row in range(self.file_table.rowCount()):
-            item = self.file_table.item(row, 0)
-            if item:
-                selected_files.append(item.toolTip())
-        return selected_files
+        """Get list of selected file paths from the shared table"""
+        if self.main_window:
+            return self.main_window.get_selected_files()
+        return []
 
     def get_output_directory(self):
         """Get the selected output directory"""

@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
     QApplication,
     QFileDialog,
     QFrame,
+    QHeaderView,
     QLabel,
     QMainWindow,
     QMenu,
@@ -16,6 +17,8 @@ from PyQt6.QtWidgets import (
     QSplashScreen,
     QTabWidget,
     QTabBar,
+    QTableWidget,
+    QTableWidgetItem,
     QToolBar,
     QToolButton,
     QVBoxLayout,
@@ -171,6 +174,10 @@ class PDFConverterApp(QMainWindow):
         main_layout.setSpacing(2)
         main_layout.setContentsMargins(0, 0, 0, 0)
         
+        # Create shared file table widget
+        self._setup_shared_file_table()
+        main_layout.addWidget(self.shared_file_table_container)
+        
         # Create tab widget with custom tab bar
         self.tab_widget = QTabWidget()
         self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
@@ -324,6 +331,139 @@ class PDFConverterApp(QMainWindow):
             self.tab_widget.addTab(placeholder, QIcon(get_resource_path(icon_path)), title)
         
         # The stretch tab is automatically added by the custom tab bar
+
+    def _setup_shared_file_table(self):
+        """Setup the shared file table widget"""
+        # Create a container widget for the file table
+        self.shared_file_table_container = QWidget()
+        table_layout = QVBoxLayout(self.shared_file_table_container)
+        table_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Create the shared file table
+        self.shared_file_table = QTableWidget(0, 2)
+        self.shared_file_table.setHorizontalHeaderLabels(["File Name", "Size"])
+        self.shared_file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.shared_file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.shared_file_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.shared_file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.shared_file_table.setShowGrid(True)
+        self.shared_file_table.setAlternatingRowColors(True)
+        # Disable sorting for the shared table
+        self.shared_file_table.setSortingEnabled(False)
+        
+        # Apply table styles
+        self.shared_file_table.setStyleSheet(
+            """
+            QTableWidget {
+                background: #ffffff;
+                color: #000;
+                gridline-color: #b2e0f7;
+                font-size: 15px;
+            }
+            QTableWidget::item:selected {
+                background: #b7d6fb;
+                color: #000;
+            }
+            QHeaderView::section {
+                background-color: #b2e0f7;
+                color: #000;
+                font-weight: bold;
+                border: 1px solid #a2d4ec;
+                padding: 6px;
+            }
+        """
+        )
+        
+        table_layout.addWidget(self.shared_file_table)
+
+    def _format_size(self, size_bytes):
+        """Format file size in bytes to human readable format"""
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        elif size_bytes < 1024 * 1024:
+            return f"{size_bytes/1024:.1f} KB"
+        else:
+            return f"{size_bytes/1024/1024:.2f} MB"
+
+    def add_file_to_table(self, file_path):
+        """Add a file to the shared table with its name and size"""
+        try:
+            file_name = os.path.basename(file_path)
+            file_size = os.path.getsize(file_path)
+            row = self.shared_file_table.rowCount()
+
+            # Disable sorting and updates temporarily
+            self.shared_file_table.setUpdatesEnabled(False)
+
+            # Insert row and set items
+            self.shared_file_table.insertRow(row)
+            name_item = QTableWidgetItem(file_name)
+            name_item.setToolTip(file_path)
+            size_item = QTableWidgetItem(self._format_size(file_size))
+
+            self.shared_file_table.setItem(row, 0, name_item)
+            self.shared_file_table.setItem(row, 1, size_item)
+
+            # Re-enable sorting and updates
+            self.shared_file_table.setUpdatesEnabled(True)
+
+        except Exception as e:
+            print(f"Error adding file {file_path}: {str(e)}")
+
+    def add_files_to_table(self, file_paths):
+        """Add multiple files to the shared table efficiently"""
+        try:
+            # Disable sorting and updates temporarily
+            self.shared_file_table.setUpdatesEnabled(False)
+
+            # Prepare all items first
+            items_to_add = []
+            for file_path in file_paths:
+                try:
+                    file_name = os.path.basename(file_path)
+                    file_size = os.path.getsize(file_path)
+                    name_item = QTableWidgetItem(file_name)
+                    name_item.setToolTip(file_path)
+                    size_item = QTableWidgetItem(self._format_size(file_size))
+                    items_to_add.append((name_item, size_item))
+                except Exception as e:
+                    print(f"Error processing file {file_path}: {str(e)}")
+
+            # Add all rows at once
+            start_row = self.shared_file_table.rowCount()
+            self.shared_file_table.setRowCount(start_row + len(items_to_add))
+
+            # Set all items
+            for i, (name_item, size_item) in enumerate(items_to_add):
+                self.shared_file_table.setItem(start_row + i, 0, name_item)
+                self.shared_file_table.setItem(start_row + i, 1, size_item)
+
+            # Re-enable sorting and updates
+            self.shared_file_table.setUpdatesEnabled(True)
+
+        except Exception as e:
+            print(f"Error adding files: {str(e)}")
+            # Make sure to re-enable updates even if there's an error
+            self.shared_file_table.setUpdatesEnabled(True)
+
+    def remove_selected_files(self):
+        """Remove selected files from the shared table"""
+        selected = self.shared_file_table.selectionModel().selectedRows()
+        for index in sorted(selected, reverse=True):
+            self.shared_file_table.removeRow(index.row())
+
+    def clear_all_files(self):
+        """Clear all files from the shared table"""
+        self.shared_file_table.setRowCount(0)
+
+    def get_selected_files(self):
+        """Get list of selected file paths from the shared table"""
+        selected_files = []
+        for row in range(self.shared_file_table.rowCount()):
+            item = self.shared_file_table.item(row, 0)
+            if item:
+                selected_files.append(item.toolTip())
+        return selected_files
 
     def _initialize_real_tabs(self):
         """Initialize the real tabs with all functionality"""
@@ -605,42 +745,26 @@ class PDFConverterApp(QMainWindow):
             current_tab.start_btn.setText(button_texts.get(index, "Start"))
 
     def _add_file(self):
-        if not self.tabs_initialized:
-            return
         files, _ = QFileDialog.getOpenFileNames(self, "Select PDF Files", os.path.expanduser("~"), "PDF Files (*.pdf)")
         if files:
-            current_tab = self.tab_widget.currentWidget()
-            if hasattr(current_tab, "add_files_to_table"):
-                current_tab.add_files_to_table(files)
+            self.add_files_to_table(files)
 
     def _add_folder(self):
-        if not self.tabs_initialized:
-            return
         folder = QFileDialog.getExistingDirectory(self, "Select Folder", os.path.expanduser("~"))
         if folder:
-            current_tab = self.tab_widget.currentWidget()
-            if hasattr(current_tab, "add_files_to_table"):
-                pdf_files = []
-                for entry in os.listdir(folder):
-                    if entry.lower().endswith(".pdf"):
-                        file_path = os.path.join(folder, entry)
-                        pdf_files.append(file_path)
-                if pdf_files:
-                    current_tab.add_files_to_table(pdf_files)
+            pdf_files = []
+            for entry in os.listdir(folder):
+                if entry.lower().endswith(".pdf"):
+                    file_path = os.path.join(folder, entry)
+                    pdf_files.append(file_path)
+            if pdf_files:
+                self.add_files_to_table(pdf_files)
 
     def _delete_selected(self):
-        if not self.tabs_initialized:
-            return
-        current_tab = self.tab_widget.currentWidget()
-        if hasattr(current_tab, "remove_selected_files"):
-            current_tab.remove_selected_files()
+        self.remove_selected_files()
 
     def _clear_all(self):
-        if not self.tabs_initialized:
-            return
-        current_tab = self.tab_widget.currentWidget()
-        if hasattr(current_tab, "clear_all_files"):
-            current_tab.clear_all_files()
+        self.clear_all_files()
 
     def _start_convert(self):
         """Handle convert button click"""

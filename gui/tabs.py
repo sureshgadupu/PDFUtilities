@@ -30,6 +30,8 @@ class ConvertTab(BaseTab):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.worker = None
+        # Add output folder controls at the end
+        self.add_output_folder_controls()
 
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
@@ -109,6 +111,7 @@ class CompressTab(BaseTab):
     def _setup_compress_ui(self):
         # Add compress-specific controls
         compress_layout = QVBoxLayout()
+        compress_layout.setSpacing(6)
 
         # Compression Level
         level_layout = QHBoxLayout()
@@ -156,8 +159,11 @@ class CompressTab(BaseTab):
         target_layout.addStretch()
         compress_layout.addLayout(target_layout)
 
-        # Add compress-specific layout after the table
-        self.layout().addLayout(compress_layout)
+        # Add compress-specific controls to the dedicated container
+        self.add_tab_controls(compress_layout)
+        
+        # Add output folder controls at the end
+        self.add_output_folder_controls()
 
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
@@ -276,7 +282,10 @@ class MergeTab(BaseTab):
         self.worker = None
         self._install_shortcuts()
         # Disable sorting permanently for merge tab since order matters
-        self.file_table.setSortingEnabled(False)
+        if self.main_window and hasattr(self.main_window, 'shared_file_table'):
+            self.main_window.shared_file_table.setSortingEnabled(False)
+        # Add output folder controls at the end
+        self.add_output_folder_controls()
 
     def _install_shortcuts(self):
         shortcut_up = QShortcut(QKeySequence("Ctrl+Up"), self)
@@ -287,41 +296,50 @@ class MergeTab(BaseTab):
         shortcut_down.activated.connect(self._move_selected_down)
 
     def _move_selected_up(self):
-        selected = self.file_table.selectionModel().selectedRows()
+        if not self.main_window or not hasattr(self.main_window, 'shared_file_table'):
+            return
+        table = self.main_window.shared_file_table
+        selected = table.selectionModel().selectedRows()
         if len(selected) != 1:
             return
         row = selected[0].row()
         if row == 0:
             return
         self._swap_rows(row, row - 1)
-        self.file_table.clearSelection()
-        self.file_table.selectRow(row - 1)
+        table.clearSelection()
+        table.selectRow(row - 1)
 
     def _move_selected_down(self):
-        selected = self.file_table.selectionModel().selectedRows()
+        if not self.main_window or not hasattr(self.main_window, 'shared_file_table'):
+            return
+        table = self.main_window.shared_file_table
+        selected = table.selectionModel().selectedRows()
         if len(selected) != 1:
             return
         row = selected[0].row()
-        if row >= self.file_table.rowCount() - 1:
+        if row >= table.rowCount() - 1:
             return
         self._swap_rows(row, row + 1)
-        self.file_table.clearSelection()
-        self.file_table.selectRow(row + 1)
+        table.clearSelection()
+        table.selectRow(row + 1)
 
     def _swap_rows(self, row1, row2):
-        self.file_table.blockSignals(True)
+        if not self.main_window or not hasattr(self.main_window, 'shared_file_table'):
+            return
+        table = self.main_window.shared_file_table
+        table.blockSignals(True)
 
-        for col in range(self.file_table.columnCount()):
+        for col in range(table.columnCount()):
             # Take items from both rows
-            item1 = self.file_table.takeItem(row1, col)
-            item2 = self.file_table.takeItem(row2, col)
+            item1 = table.takeItem(row1, col)
+            item2 = table.takeItem(row2, col)
 
             # Set items in swapped positions
-            self.file_table.setItem(row1, col, item2)
-            self.file_table.setItem(row2, col, item1)
+            table.setItem(row1, col, item2)
+            table.setItem(row2, col, item1)
 
-        self.file_table.blockSignals(False)
-        self.file_table.viewport().update()
+        table.blockSignals(False)
+        table.viewport().update()
 
     def add_files_to_table(self, file_paths):
         """Override to clear status when new files are added"""
@@ -400,6 +418,7 @@ class SplitTab(BaseTab):
     def _setup_split_ui(self):
         # Add split-specific controls
         split_layout = QVBoxLayout()
+        split_layout.setSpacing(6)
 
         # Split Mode and Range Input in same row
         mode_layout = QHBoxLayout()
@@ -442,8 +461,11 @@ class SplitTab(BaseTab):
         # Add the combined layout
         split_layout.addLayout(mode_layout)
 
-        # Add split-specific layout after the table
-        self.layout().addLayout(split_layout)
+        # Add split-specific controls to the dedicated container
+        self.add_tab_controls(split_layout)
+        
+        # Add output folder controls at the end
+        self.add_output_folder_controls()
 
         # Initially hide range input
         range_label.setVisible(False)
@@ -565,6 +587,7 @@ class ExtractTab(BaseTab):
     def _setup_extract_ui(self):
         # Add extract-specific controls
         extract_layout = QVBoxLayout()
+        extract_layout.setSpacing(6)
 
         # Extract Mode
         mode_layout = QHBoxLayout()
@@ -603,8 +626,11 @@ class ExtractTab(BaseTab):
         custom_range_layout.addStretch()
         extract_layout.addLayout(custom_range_layout)
 
-        # Add extract-specific layout after the table
-        self.layout().addLayout(extract_layout)
+        # Add extract-specific controls to the dedicated container
+        self.add_tab_controls(extract_layout)
+        
+        # Add output folder controls at the end
+        self.add_output_folder_controls()
 
     def _on_range_mode_changed(self, mode):
         """Show/hide range input based on selected mode"""
@@ -726,6 +752,7 @@ class ConvertToImageTab(BaseTab):
     def _setup_convert_to_image_ui(self):
         # Add convert to image specific controls
         convert_layout = QVBoxLayout()
+        convert_layout.setSpacing(6)
 
         # Image Format and DPI in a single row
         format_dpi_layout = QHBoxLayout()
@@ -733,7 +760,7 @@ class ConvertToImageTab(BaseTab):
         # Image Format
         format_layout = QHBoxLayout()
         format_label = QLabel("Image Format:")
-        format_label.setStyleSheet("color: #000;")
+        format_label.setStyleSheet("color: #000; font-weight: bold;")
         self.format_combo = QComboBox()
         self.format_combo.setStyleSheet("color: #000;")
         self.format_combo.addItems(["PNG", "JPEG"])
@@ -766,7 +793,7 @@ class ConvertToImageTab(BaseTab):
         # Image Result Type
         result_type_layout = QHBoxLayout()
         result_type_label = QLabel("Image Result Type:")
-        result_type_label.setStyleSheet("color: #000;")
+        result_type_label.setStyleSheet("color: #000; font-weight: bold;")
         self.result_type_combo = QComboBox()
         self.result_type_combo.setStyleSheet("color: #000;")
         self.result_type_combo.addItems(["Multiple Images", "Single Big Image"])
@@ -791,8 +818,11 @@ class ConvertToImageTab(BaseTab):
         result_color_layout.addStretch()
         convert_layout.addLayout(result_color_layout)
 
-        # Add convert-specific layout after the table
-        self.layout().addLayout(convert_layout)
+        # Add convert-specific controls to the dedicated container
+        self.add_tab_controls(convert_layout)
+        
+        # Add output folder controls at the end
+        self.add_output_folder_controls()
 
     def _start_convert_to_image(self):
         """Start the PDF to image conversion process"""
@@ -873,6 +903,7 @@ class ExtractTextTab(BaseTab):
     def _setup_extract_text_ui(self):
         # Add extract text specific controls
         extract_layout = QVBoxLayout()
+        extract_layout.setSpacing(6)
 
         # Mode selection
         mode_layout = QHBoxLayout()
@@ -912,11 +943,33 @@ class ExtractTextTab(BaseTab):
         format_layout.addStretch()
         extract_layout.addLayout(format_layout)
 
-        # Add extract-specific layout after the table
-        self.layout().addLayout(extract_layout)
+        # Add extract-specific controls to the dedicated container
+        self.add_tab_controls(extract_layout)
+        
+        # Add output folder controls at the end
+        self.add_output_folder_controls()
 
     def on_mode_changed(self, index):
         self.page_range.setEnabled(index == 2)  # Enable only for "Page Range" mode
+
+    def _parse_page_ranges(self, range_str):
+        """Parse comma-separated page ranges into a list of page numbers"""
+        try:
+            pages = []
+            ranges = range_str.replace(" ", "").split(",")
+
+            for r in ranges:
+                if "-" in r:
+                    start, end = map(int, r.split("-"))
+                    if start > end:
+                        raise ValueError("Invalid range: start > end")
+                    pages.extend(range(start, end + 1))
+                else:
+                    pages.append(int(r))
+
+            return sorted(set(pages))  # Remove duplicates and sort
+        except ValueError as e:
+            raise ValueError(f"Invalid page range format: {str(e)}")
 
     def _start_extract_text(self):
         """Start the text extraction process"""
@@ -932,11 +985,28 @@ class ExtractTextTab(BaseTab):
 
         # Get settings
         mode_index = self.mode_combo.currentIndex()
-        if mode_index == 0:  # Simple
-            mode = "layout" if self.layout_radio.isChecked() else "simple"
-        else:  # OCR
-            # This part can be expanded with OCR options if needed
-            mode = "ocr"
+        if mode_index == 0:  # All Pages
+            mode = "all"
+            page_range = None
+        elif mode_index == 1:  # Selected Pages
+            mode = "selected"
+            page_range = None
+        else:  # Page Range
+            mode = "range"
+            range_str = self.page_range.text().strip()
+            if not range_str:
+                self.show_notification("Please enter page ranges.", "error", duration=2000)
+                return
+            try:
+                page_range = self._parse_page_ranges(range_str)
+                if not page_range:
+                    self.show_notification("No valid page numbers found.", "error", duration=2000)
+                    return
+            except ValueError as e:
+                self.show_notification(f"Invalid page range: {str(e)}", "error", duration=2000)
+                return
+
+        output_format = self.format_combo.currentText().lower()
 
         # Create and start worker
         self.worker = ExtractTextWorker(
