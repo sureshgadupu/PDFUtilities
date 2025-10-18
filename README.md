@@ -18,7 +18,16 @@ A comprehensive PDF processing application built with PyQt6, offering multiple P
 
 ## 📋 Changelog
 
-### Version 0.0.6 (Latest)
+### Version 0.0.7 (Latest)
+
+- **🔧 Fixed**: Import errors for worker classes (CompressionWorker, ConvertToImageWorker, ExtractTextWorker)
+- **🧹 Cleaned**: Removed debug print statements and notifications
+- **📁 Organized**: Consolidated all worker classes into workers.py for better maintainability
+- **🐛 Fixed**: Indentation errors in CompressTab cleanup methods
+- **⚡ Improved**: Error handling consistency across all worker classes
+- **🎯 Enhanced**: Code organization and structure for better development experience
+
+### Version 0.0.6
 
 - **🐛 Fixed**: Notification system reliability issues
 - **🔧 Improved**: Error message handling in Convert to DOCX tab
