@@ -51,8 +51,11 @@ class ConvertTab(BaseTab):
             self.show_notification("Please select an output directory.", "error", duration=2000)
             return
 
+        # Get passwords for the files
+        passwords = self.get_file_passwords()
+        
         # Create and start worker
-        self.worker = ConversionWorker(pdf_files, output_dir, parent=self)
+        self.worker = ConversionWorker(pdf_files, output_dir, passwords=passwords, parent=self)
         self.worker.progress.connect(self._update_progress)
         self.worker.status_update.connect(self.show_notification)  # Connect directly
         self.worker.finished.connect(self._handle_conversion_finished)
@@ -206,9 +209,12 @@ class CompressTab(BaseTab):
                 self.show_notification("Invalid target size value.", "error", duration=2000)
                 return
 
+        # Get passwords for the files
+        passwords = self.get_file_passwords()
+        
         # Create and start worker
         self.worker = CompressionWorker(
-            pdf_files, output_dir, compression_mode=compression_mode, target_size_kb=target_size_kb, parent=self
+            pdf_files, output_dir, compression_mode=compression_mode, target_size_kb=target_size_kb, passwords=passwords, parent=self
         )
         self.worker.progress.connect(self._update_progress)
         self.worker.status_update.connect(self.show_notification)
@@ -272,7 +278,8 @@ class CompressTab(BaseTab):
                 if os.path.exists(file_path):
                     os.remove(file_path)
             except Exception as e:
-                print(f"Error removing file {file_path}: {str(e)}")
+                # Log error but continue with cleanup
+                pass
         self.generated_files = []
 
 
@@ -370,8 +377,11 @@ class MergeTab(BaseTab):
         if not output_filename:
             return
 
+        # Get passwords for the files
+        passwords = self.get_file_passwords()
+        
         # Create and start worker
-        self.worker = MergeWorker(pdf_files, output_filename, parent=self)
+        self.worker = MergeWorker(pdf_files, output_filename, passwords=passwords, parent=self)
         self.worker.progress.connect(self._update_progress)
         self.worker.status_update.connect(self.show_notification)
         self.worker.finished.connect(self._handle_merge_finished)
@@ -530,9 +540,12 @@ class SplitTab(BaseTab):
                 self.show_notification(f"Invalid page range: {str(e)}", "error", duration=2000)
                 return
 
+        # Get passwords for the files
+        passwords = self.get_file_passwords()
+        
         # Create and start worker
         self.worker = SplitWorker(
-            pdf_files=pdf_files, output_directory=output_dir, split_mode=split_mode, page_ranges=page_ranges, parent=self
+            pdf_files=pdf_files, output_directory=output_dir, split_mode=split_mode, page_ranges=page_ranges, passwords=passwords, parent=self
         )
         self.worker.progress.connect(self._update_progress)
         self.worker.status_update.connect(self.show_notification)
@@ -690,6 +703,9 @@ class ExtractTab(BaseTab):
                 self.show_notification(f"Invalid page range: {str(e)}", "error", duration=2000)
                 return
 
+        # Get passwords for the files
+        passwords = self.get_file_passwords()
+        
         # Create and start worker
         self.worker = ExtractWorker(
             pdf_files=pdf_files,
@@ -697,6 +713,7 @@ class ExtractTab(BaseTab):
             extract_mode=extract_mode,
             page_range=page_range,
             page_ranges=page_ranges,
+            passwords=passwords,
             parent=self,
         )
         self.worker.progress.connect(self._update_progress)
@@ -748,6 +765,8 @@ class ConvertToImageTab(BaseTab):
         super().__init__(parent)
         self._setup_convert_to_image_ui()
         self.worker = None
+        # Connect the start button to the conversion method
+        self.start_btn.clicked.connect(self._start_convert_to_image)
 
     def _setup_convert_to_image_ui(self):
         # Add convert to image specific controls
@@ -842,6 +861,9 @@ class ConvertToImageTab(BaseTab):
         result_type = self.result_type_combo.currentText()
         color_type = self.color_type_combo.currentText()
 
+        # Get passwords for the files
+        passwords = self.get_file_passwords()
+        
         # Create and start worker
         self.worker = ConvertToImageWorker(
             pdf_files=pdf_files,
@@ -850,6 +872,7 @@ class ConvertToImageTab(BaseTab):
             dpi=dpi,
             result_type=result_type,
             color_type=color_type,
+            passwords=passwords,
             parent=self,
         )
         self.worker.progress.connect(self._update_progress)
@@ -1008,6 +1031,9 @@ class ExtractTextTab(BaseTab):
 
         output_format = self.format_combo.currentText().lower()
 
+        # Get passwords for the files
+        passwords = self.get_file_passwords()
+        
         # Create and start worker
         self.worker = ExtractTextWorker(
             pdf_files=pdf_files,
@@ -1015,6 +1041,7 @@ class ExtractTextTab(BaseTab):
             mode=mode,
             page_range=page_range,
             output_format=output_format,
+            passwords=passwords,
             parent=self,
         )
         self.worker.progress.connect(self._update_progress)

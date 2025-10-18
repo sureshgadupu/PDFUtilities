@@ -315,6 +315,12 @@ class BaseTab(QWidget):
             return self.main_window.get_selected_files()
         return []
 
+    def get_file_passwords(self):
+        """Get passwords for all files in the table"""
+        if self.main_window:
+            return self.main_window.get_file_passwords()
+        return {}
+
     def get_output_directory(self):
         """Get the selected output directory"""
         if self.same_folder_radio.isChecked():

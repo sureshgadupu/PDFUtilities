@@ -28,7 +28,10 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
 )
 
+import fitz  # PyMuPDF for PDF password detection
+
 from compressor import is_ghostscript_available
+from gui.custom_widgets import PasswordInputWidget
 from gui.notification import NotificationWidget
 from gui.tabs import (
     CompressTab,
@@ -57,6 +60,24 @@ def get_resource_path(relative_path):
         base_path = os.path.dirname(os.path.abspath(__file__))
 
     return os.path.join(base_path, relative_path)
+
+
+def is_pdf_password_protected(file_path):
+    """Check if a PDF file is password protected"""
+    try:
+        doc = fitz.open(file_path)
+        # Try to access the first page without password
+        doc[0]
+        doc.close()
+        return False
+    except Exception as e:
+        # If we can't access the page, it's likely password protected
+        # But let's be more specific about the error
+        error_msg = str(e).lower()
+        if 'password' in error_msg or 'encrypted' in error_msg or 'permission' in error_msg or 'closed' in error_msg:
+            return True
+        # For other errors, we'll assume it's not password protected
+        return False
 
 
 class InitializationThread(QThread):
@@ -339,11 +360,12 @@ class PDFConverterApp(QMainWindow):
         table_layout = QVBoxLayout(self.shared_file_table_container)
         table_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Create the shared file table
-        self.shared_file_table = QTableWidget(0, 2)
-        self.shared_file_table.setHorizontalHeaderLabels(["File Name", "Size"])
+        # Create the shared file table with password column
+        self.shared_file_table = QTableWidget(0, 3)
+        self.shared_file_table.setHorizontalHeaderLabels(["File Name", "Size", "Password"])
         self.shared_file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.shared_file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.shared_file_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.shared_file_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.shared_file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.shared_file_table.setShowGrid(True)
@@ -386,7 +408,7 @@ class PDFConverterApp(QMainWindow):
             return f"{size_bytes/1024/1024:.2f} MB"
 
     def add_file_to_table(self, file_path):
-        """Add a file to the shared table with its name and size"""
+        """Add a file to the shared table with its name, size, and password input"""
         try:
             file_name = os.path.basename(file_path)
             file_size = os.path.getsize(file_path)
@@ -401,8 +423,45 @@ class PDFConverterApp(QMainWindow):
             name_item.setToolTip(file_path)
             size_item = QTableWidgetItem(self._format_size(file_size))
 
+            # Check if PDF is password protected
+            is_protected = False
+            if file_name.lower().endswith('.pdf'):
+                is_protected = is_pdf_password_protected(file_path)
+
+            # Create password input widget
+            password_widget = PasswordInputWidget()
+            if is_protected:
+                password_widget.password_input.setPlaceholderText("Password required")
+                password_widget.password_input.setStyleSheet("""
+                    QLineEdit {
+                        background: #fff3cd;
+                        color: #856404;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 4px;
+                        padding: 4px 8px;
+                        font-size: 12px;
+                    }
+                    QLineEdit:focus {
+                        border: 2px solid #ffc107;
+                    }
+                """)
+            else:
+                password_widget.password_input.setPlaceholderText("No password needed")
+                password_widget.password_input.setEnabled(False)
+                password_widget.password_input.setStyleSheet("""
+                    QLineEdit {
+                        background: #d4edda;
+                        color: #155724;
+                        border: 1px solid #c3e6cb;
+                        border-radius: 4px;
+                        padding: 4px 8px;
+                        font-size: 12px;
+                    }
+                """)
+
             self.shared_file_table.setItem(row, 0, name_item)
             self.shared_file_table.setItem(row, 1, size_item)
+            self.shared_file_table.setCellWidget(row, 2, password_widget)
 
             # Re-enable sorting and updates
             self.shared_file_table.setUpdatesEnabled(True)
@@ -425,7 +484,44 @@ class PDFConverterApp(QMainWindow):
                     name_item = QTableWidgetItem(file_name)
                     name_item.setToolTip(file_path)
                     size_item = QTableWidgetItem(self._format_size(file_size))
-                    items_to_add.append((name_item, size_item))
+                    
+                    # Check if PDF is password protected
+                    is_protected = False
+                    if file_name.lower().endswith('.pdf'):
+                        is_protected = is_pdf_password_protected(file_path)
+                    
+                    # Create password input widget
+                    password_widget = PasswordInputWidget()
+                    if is_protected:
+                        password_widget.password_input.setPlaceholderText("Password required")
+                        password_widget.password_input.setStyleSheet("""
+                            QLineEdit {
+                                background: #fff3cd;
+                                color: #856404;
+                                border: 1px solid #ffeaa7;
+                                border-radius: 4px;
+                                padding: 4px 8px;
+                                font-size: 12px;
+                            }
+                            QLineEdit:focus {
+                                border: 2px solid #ffc107;
+                            }
+                        """)
+                    else:
+                        password_widget.password_input.setPlaceholderText("No password needed")
+                        password_widget.password_input.setEnabled(False)
+                        password_widget.password_input.setStyleSheet("""
+                            QLineEdit {
+                                background: #d4edda;
+                                color: #155724;
+                                border: 1px solid #c3e6cb;
+                                border-radius: 4px;
+                                padding: 4px 8px;
+                                font-size: 12px;
+                            }
+                        """)
+                    
+                    items_to_add.append((name_item, size_item, password_widget))
                 except Exception as e:
                     print(f"Error processing file {file_path}: {str(e)}")
 
@@ -434,9 +530,10 @@ class PDFConverterApp(QMainWindow):
             self.shared_file_table.setRowCount(start_row + len(items_to_add))
 
             # Set all items
-            for i, (name_item, size_item) in enumerate(items_to_add):
+            for i, (name_item, size_item, password_widget) in enumerate(items_to_add):
                 self.shared_file_table.setItem(start_row + i, 0, name_item)
                 self.shared_file_table.setItem(start_row + i, 1, size_item)
+                self.shared_file_table.setCellWidget(start_row + i, 2, password_widget)
 
             # Re-enable sorting and updates
             self.shared_file_table.setUpdatesEnabled(True)
@@ -464,6 +561,20 @@ class PDFConverterApp(QMainWindow):
             if item:
                 selected_files.append(item.toolTip())
         return selected_files
+
+    def get_file_passwords(self):
+        """Get passwords for all files in the table"""
+        passwords = {}
+        for row in range(self.shared_file_table.rowCount()):
+            item = self.shared_file_table.item(row, 0)
+            if item:
+                file_path = item.toolTip()
+                password_widget = self.shared_file_table.cellWidget(row, 2)
+                if password_widget:
+                    password = password_widget.get_password()
+                    if password:  # Only store non-empty passwords
+                        passwords[file_path] = password
+        return passwords
 
     def _initialize_real_tabs(self):
         """Initialize the real tabs with all functionality"""

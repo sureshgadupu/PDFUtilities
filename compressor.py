@@ -6,7 +6,7 @@ import sys
 import fitz  # PyMuPDF
 
 
-def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True):
+def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True, password=None):
     """Compress PDF by recompressing images and optionally removing metadata.
     
     Args:
@@ -14,12 +14,17 @@ def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True
         output_path (str): Path to output PDF file.
         image_quality (int): JPEG quality (10-100, higher is better quality/larger size).
         remove_metadata (bool): If True, remove metadata from the PDF.
+        password (str, optional): Password for password-protected PDFs.
     Returns:
         bool: True if compression succeeded, False otherwise.
         str: Message about the result.
     """
     try:
         doc = fitz.open(input_path)
+        if password:
+            if not doc.authenticate(password):
+                doc.close()
+                return False, f"Invalid password for {os.path.basename(input_path)}"
         for page_num, page in enumerate(doc):
             images = page.get_images(full=True)
             for img_index, img in enumerate(images):
@@ -52,7 +57,7 @@ def compress_pdf(input_path, output_path, image_quality=80, remove_metadata=True
         return False, f"Error compressing {os.path.basename(input_path)}: {e}"
 
 
-def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
+def compress_pdf_to_target_size(input_path, output_path, target_size_kb, password=None):
     """Compress PDF to target size using Ghostscript with progressive quality reduction."""
     print(f"\nCompressing to target size: {target_size_kb} KB")
     print(f"Original file: {input_path}")
@@ -87,7 +92,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
     for quality, dpi in quality_steps:
         print(f"\nTrying {quality} quality ({dpi} DPI)...")
         temp_output = output_path.replace(".pdf", f"_{quality}_{dpi}.pdf")
-        ghostscript_compress(input_path, temp_output, quality, custom_dpi=dpi)
+        ghostscript_compress(input_path, temp_output, quality, custom_dpi=dpi, password=password)
         temp_size = os.path.getsize(temp_output) / 1024
         print(f"Size at {dpi} DPI: {temp_size:.2f} KB")
 
@@ -108,7 +113,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
     while quality >= 30:
         print(f"\nTrying with image quality: {quality}%")
         temp_output = output_path.replace(".pdf", f"_q{quality}.pdf")
-        ghostscript_compress(input_path, temp_output, "low", image_quality=quality)
+        ghostscript_compress(input_path, temp_output, "low", image_quality=quality, password=password)
         temp_size = os.path.getsize(temp_output) / 1024
         print(f"Size at {quality}% quality: {temp_size:.2f} KB")
 
@@ -137,7 +142,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
     for quality, dpi in quality_steps:
         temp_output = output_path.replace(".pdf", f"_{quality}_{dpi}.pdf")
         try:
-            ghostscript_compress(input_path, temp_output, quality, custom_dpi=dpi)
+            ghostscript_compress(input_path, temp_output, quality, custom_dpi=dpi, password=password)
             temp_size = os.path.getsize(temp_output) / 1024
             sizes[f"{quality}_{dpi}"] = (temp_output, temp_size)
         except (OSError, subprocess.CalledProcessError):
@@ -146,7 +151,7 @@ def compress_pdf_to_target_size(input_path, output_path, target_size_kb):
     # Add low quality with image compression as last resort
     temp_output = output_path.replace(".pdf", "_q30.pdf")
     try:
-        ghostscript_compress(input_path, temp_output, "low", image_quality=30)
+        ghostscript_compress(input_path, temp_output, "low", image_quality=30, password=password)
         temp_size = os.path.getsize(temp_output) / 1024
         sizes["low_q30"] = (temp_output, temp_size)
     except (OSError, subprocess.CalledProcessError):
@@ -215,7 +220,7 @@ def get_ghostscript_cmd():
         return "gs"  # fallback, will error if not installed
 
 
-def ghostscript_compress(input_path, output_path, quality="medium", image_quality=None, custom_dpi=None):
+def ghostscript_compress(input_path, output_path, quality="medium", image_quality=None, custom_dpi=None, password=None):
     """Compress PDF using Ghostscript with specified quality settings."""
     if not is_ghostscript_available():
         if os.name == "nt":
@@ -252,6 +257,10 @@ def ghostscript_compress(input_path, output_path, quality="medium", image_qualit
         f"-dMonoImageResolution={dpi}",
     ]
 
+    # Add password if provided - Ghostscript uses -sPDFPassword
+    if password:
+        cmd.extend(["-sPDFPassword=" + password])
+
     # Add image quality settings if specified
     if image_quality is not None:
         cmd.extend(
@@ -267,17 +276,28 @@ def ghostscript_compress(input_path, output_path, quality="medium", image_qualit
     cmd.extend(["-sOutputFile=" + output_path, input_path])
 
     # Execute command
-    subprocess.run(cmd, check=True, capture_output=True)
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        # If password is wrong or other error, try without password
+        if password and "password" in str(e).lower():
+            raise Exception(f"Invalid password for PDF: {input_path}")
+        else:
+            raise Exception(f"Ghostscript error: {e}")
 
 
 def compress_multiple_pdfs(
-    pdf_files, output_directory, compression_mode="medium", target_size_kb=None, progress_callback=None, status_callback=None
+    pdf_files, output_directory, compression_mode="medium", target_size_kb=None, passwords=None, progress_callback=None, status_callback=None
 ):
     """
     Compress multiple PDFs using Ghostscript. compression_mode: 'low', 'medium', 'high'.
     target_size_kb: if set, will compress to target size using image quality adjustment.
+    passwords: dictionary mapping file paths to passwords for password-protected PDFs.
     Output files are named with _compressed before .pdf, and numbered if needed.
     """
+    if passwords is None:
+        passwords = {}
+        
     if not is_ghostscript_available():
         if os.name == "nt":
             msg = "Ghostscript is not installed or not in PATH. Please install Ghostscript."
@@ -322,11 +342,14 @@ def compress_multiple_pdfs(
             status_callback(f"Compressing {base} ({idx+1}/{total})...")
 
         try:
+            # Get password for this file if available
+            password = passwords.get(pdf)
+            
             # If target size is specified, use the target size compression function
             if target_size_kb:
                 if status_callback:
                     status_callback(f"Compressing to target size: {target_size_kb} KB...")
-                success, message = compress_pdf_to_target_size(pdf, out_path, target_size_kb)
+                success, message = compress_pdf_to_target_size(pdf, out_path, target_size_kb, password)
                 if success:
                     successes.append(f"Compressed: {base} - {message}")
                 else:
@@ -338,7 +361,7 @@ def compress_multiple_pdfs(
                         successes.append(f"Compressed: {base} - {message}")
             else:
                 # If no target size, use specified compression mode
-                ghostscript_compress(pdf, out_path, quality=compression_mode)
+                ghostscript_compress(pdf, out_path, quality=compression_mode, password=password)
                 successes.append(f"Compressed: {base}")
 
             if progress_callback:
