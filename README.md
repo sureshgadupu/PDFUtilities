@@ -18,7 +18,16 @@ A comprehensive PDF processing application built with PyQt6, offering multiple P
 
 ## 📋 Changelog
 
-### Version 0.0.7 (Latest)
+### Version 0.0.8 (Latest)
+
+- **🔧 Fixed**: Password removal functionality now intelligently detects encrypted PDFs
+- **✨ Enhanced**: Non-encrypted PDFs no longer require password prompts
+- **🧹 Cleaned**: Removed duplicate PasswordRemovalTab classes from codebase
+- **📁 Added**: New password_remover.py module with improved PDF encryption detection
+- **⚡ Improved**: Better user experience for password removal operations
+- **🎯 Enhanced**: More accurate password validation logic
+
+### Version 0.0.7
 
 - **🔧 Fixed**: Import errors for worker classes (CompressionWorker, ConvertToImageWorker, ExtractTextWorker)
 - **🧹 Cleaned**: Removed debug print statements and notifications
