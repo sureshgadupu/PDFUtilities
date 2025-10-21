@@ -20,6 +20,7 @@ from workers import (
     ExtractTextWorker,
     ExtractWorker,
     MergeWorker,
+    PasswordRemovalWorker,
     SplitWorker,
 )
 
@@ -39,11 +40,41 @@ class ConvertTab(BaseTab):
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
 
-    def _start_conversion_process(self):
-        """Start the PDF to DOCX conversion process"""
+
+class PasswordRemovalTab(BaseTab):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._setup_password_removal_ui()
+        self.worker = None
+        # Add output folder controls at the end
+        self.add_output_folder_controls()
+
+    def _setup_password_removal_ui(self):
+        """Setup password removal specific controls"""
+        # Add password removal specific controls
+        password_layout = QVBoxLayout()
+        password_layout.setSpacing(6)
+
+        # Information label
+        info_label = QLabel("Remove password protection from PDF files. Unlocked files will be saved with '_unlocked' suffix.")
+        info_label.setStyleSheet("color: #000; font-size: 12px; padding: 8px; background: #f0f8ff; border: 1px solid #b2e0f7; border-radius: 4px;")
+        info_label.setWordWrap(True)
+        password_layout.addWidget(info_label)
+
+        # Add password removal specific controls to the dedicated container
+        self.add_tab_controls(password_layout)
+
+    def add_files_to_table(self, file_paths):
+        """Override to clear status when new files are added"""
+        super().add_files_to_table(file_paths)
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setValue(0)
+
+    def _start_password_removal(self):
+        """Start the password removal process"""
         pdf_files = self.get_selected_files()
         if not pdf_files:
-            self.show_notification("Please select PDF files to convert.", "error", duration=2000)
+            self.show_notification("Please select PDF files to remove passwords from.", "error", duration=2000)
             return
 
         output_dir = self.get_output_directory()
@@ -54,19 +85,38 @@ class ConvertTab(BaseTab):
         # Get passwords for the files
         passwords = self.get_file_passwords()
         
+        # Check which files are actually password-protected and require passwords
+        missing_passwords = []
+        for file_path in pdf_files:
+            # Check if the PDF is password-protected
+            try:
+                from password_remover import is_pdf_password_protected
+                if is_pdf_password_protected(file_path):
+                    # Only require password if the file is actually password-protected
+                    if file_path not in passwords or not passwords[file_path]:
+                        missing_passwords.append(os.path.basename(file_path))
+            except Exception as e:
+                # If we can't check, assume it might be protected and require password
+                if file_path not in passwords or not passwords[file_path]:
+                    missing_passwords.append(os.path.basename(file_path))
+        
+        if missing_passwords:
+            self.show_notification(f"Please provide passwords for encrypted files: {', '.join(missing_passwords)}", "error", duration=3000)
+            return
+
         # Create and start worker
-        self.worker = ConversionWorker(pdf_files, output_dir, passwords=passwords, parent=self)
+        self.worker = PasswordRemovalWorker(pdf_files, output_dir, passwords=passwords, parent=self)
         self.worker.progress.connect(self._update_progress)
-        self.worker.status_update.connect(self.show_notification)  # Connect directly
-        self.worker.finished.connect(self._handle_conversion_finished)
-        self.worker.error.connect(self._handle_conversion_error)
+        self.worker.status_update.connect(self.show_notification)
+        self.worker.finished.connect(self._handle_password_removal_finished)
+        self.worker.error.connect(self._handle_password_removal_error)
         self.worker.start()
 
         # Update UI
         self.start_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-        self.show_notification("Starting conversion...", "info")
+        self.show_notification("Starting password removal...", "info")
 
     def _update_progress(self, value):
         """Update progress bar"""
@@ -76,32 +126,23 @@ class ConvertTab(BaseTab):
         """Update status label"""
         self.show_notification(message, "info")
 
-    def _handle_conversion_finished(self, successful_messages, failed_messages):
-        """Handle conversion completion"""
+    def _handle_password_removal_finished(self, successful_messages, failed_messages):
+        """Handle password removal completion"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
 
         if successful_messages and not failed_messages:
-            self.show_notification("Conversion completed successfully!", "success")
+            self.show_notification("Password removal completed successfully!", "success")
         elif successful_messages and failed_messages:
-            self.show_notification(f"Conversion completed with {len(failed_messages)} errors.", "warning", duration=2000)
+            self.show_notification(f"Password removal completed with {len(failed_messages)} errors.", "warning", duration=2000)
         else:
-            self.show_notification("Conversion failed.", "error", duration=2000)
+            self.show_notification("Password removal failed.", "error", duration=2000)
 
-    def _handle_conversion_error(self, error_message):
-        """Handle conversion error"""
+    def _handle_password_removal_error(self, error_message):
+        """Handle password removal error"""
         self.start_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         self.show_notification(f"Error: {error_message}", "error", duration=2000)
-
-    def stop_active_conversion(self):
-        """Stop any active conversion process"""
-        if self.worker and self.worker.isRunning():
-            self.worker.stop()
-            self.worker.wait()
-            self.start_btn.setEnabled(True)
-            self.progress_bar.setVisible(False)
-            self.show_notification("Conversion stopped.", "info")
 
 
 class CompressTab(BaseTab):
@@ -173,7 +214,6 @@ class CompressTab(BaseTab):
         super().add_files_to_table(file_paths)
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
-        self.generated_files = []  # Clear tracked files
 
     def _start_compression(self):
         """Start the PDF compression process"""
@@ -587,8 +627,6 @@ class SplitTab(BaseTab):
         super().add_files_to_table(file_paths)
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
-        if self.mode_combo.currentText() == "Custom Range":
-            self.range_input.clear()
 
 
 class ExtractTab(BaseTab):
@@ -756,8 +794,6 @@ class ExtractTab(BaseTab):
         super().add_files_to_table(file_paths)
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
-        if self.range_combo.currentText() == "Custom Range":
-            self.range_input.clear()
 
 
 class ConvertToImageTab(BaseTab):

@@ -39,6 +39,7 @@ from gui.tabs import (
     ConvertToImageTab,
     ExtractTab,
     MergeTab,
+    PasswordRemovalTab,
     SplitTab,
 )
 from version import get_version
@@ -337,6 +338,7 @@ class PDFConverterApp(QMainWindow):
             ("Split PDF", "gui/icons/scissors.svg"),
             ("Extract Text", "gui/icons/file-text.svg"),
             ("Convert to Image", "gui/icons/image.svg"),
+            ("Remove Password", "gui/icons/x-circle.svg"),
         ]
 
         for title, icon_path in placeholder_tabs:
@@ -588,10 +590,11 @@ class PDFConverterApp(QMainWindow):
         self.split_tab = SplitTab(self)
         self.extract_tab = ExtractTab(self)
         self.convert_to_image_tab = ConvertToImageTab(self)
+        self.password_removal_tab = PasswordRemovalTab(self)
 
         # Replace placeholder tabs with real tabs
         # Note: The stretch tab is at the end, so we need to account for it
-        real_tab_count = 6  # Number of real tabs
+        real_tab_count = 7  # Number of real tabs
         
         self.tab_widget.removeTab(0)  # Remove Convert to DOCX placeholder
         self.tab_widget.insertTab(0, self.convert_tab, QIcon(get_resource_path("gui/icons/file-text.svg")), "Convert to DOCX")
@@ -612,6 +615,11 @@ class PDFConverterApp(QMainWindow):
         self.tab_widget.insertTab(
             5, self.convert_to_image_tab, QIcon(get_resource_path("gui/icons/image.svg")), "Convert to Image"
         )
+
+        self.tab_widget.removeTab(6)  # Remove Remove Password placeholder
+        self.tab_widget.insertTab(
+            6, self.password_removal_tab, QIcon(get_resource_path("gui/icons/x-circle.svg")), "Remove Password"
+        )
         
         # Update the stretch tab index after all real tabs are added
         self.custom_tab_bar.stretch_tab_index = real_tab_count
@@ -629,6 +637,7 @@ class PDFConverterApp(QMainWindow):
         self.split_tab.start_btn.clicked.connect(self._start_split)
         self.extract_tab.start_btn.clicked.connect(self._start_extract)
         self.convert_to_image_tab.start_btn.clicked.connect(self._start_convert_to_image)
+        self.password_removal_tab.start_btn.clicked.connect(self._start_password_removal)
 
         self.tabs_initialized = True
 
@@ -850,6 +859,7 @@ class PDFConverterApp(QMainWindow):
             3: "Split",  # Split PDF
             4: "Extract",  # Extract Text
             5: "Convert",  # Convert to Image
+            6: "Remove",  # Remove Password
         }
         current_tab = self.tab_widget.widget(index)
         if current_tab and hasattr(current_tab, "start_btn"):
@@ -907,6 +917,11 @@ class PDFConverterApp(QMainWindow):
         if hasattr(self, "convert_to_image_tab"):
             self.convert_to_image_tab._start_convert_to_image()
 
+    def _start_password_removal(self):
+        """Handle password removal button click"""
+        if hasattr(self, "password_removal_tab"):
+            self.password_removal_tab._start_password_removal()
+
     def _show_about(self):
         """Show About dialog"""
         current_version = get_version()
@@ -923,6 +938,7 @@ class PDFConverterApp(QMainWindow):
             <li>Split PDF pages</li>
             <li>Extract text from PDFs</li>
             <li>Convert PDF to images</li>
+            <li>Remove password protection</li>
         </ul>
         <p><b>License:</b> GNU Affero General Public License v3.0 (AGPL-3.0)</p>
         <p><b>Dependencies:</b> PyQt6, PyMuPDF, pdf2docx, Pillow, Ghostscript</p>
@@ -955,6 +971,7 @@ class PDFConverterApp(QMainWindow):
         <p><b>Split PDF:</b> Extract specific pages or ranges</p>
         <p><b>Extract Text:</b> Pull text content from PDFs</p>
         <p><b>Convert to Image:</b> Export PDF pages as images</p>
+        <p><b>Remove Password:</b> Remove password protection from PDF files</p>
         
         <h3>Keyboard Shortcuts</h3>
         <p><b>Ctrl+O:</b> Add File</p>
@@ -1009,6 +1026,13 @@ class PDFConverterApp(QMainWindow):
             and self.extract_tab.worker.isRunning()
         ):
             self.extract_tab.worker.stop()
+        if (
+            hasattr(self, "password_removal_tab")
+            and hasattr(self.password_removal_tab, "worker")
+            and self.password_removal_tab.worker
+            and self.password_removal_tab.worker.isRunning()
+        ):
+            self.password_removal_tab.worker.stop()
         super().closeEvent(event)
 
 
@@ -1036,7 +1060,7 @@ def create_splash_screen():
     subtitle_font = QFont("Arial", 11)
     painter.setFont(subtitle_font)
     painter.setPen(QColor(100, 100, 100))
-    painter.drawText(0, 120, 400, 30, Qt.AlignmentFlag.AlignCenter, "Convert • Compress • Merge • Split • Extract")
+    painter.drawText(0, 120, 400, 30, Qt.AlignmentFlag.AlignCenter, "Convert • Compress • Merge • Split • Extract • Remove Password")
 
     # Draw version
     version_font = QFont("Arial", 10)
