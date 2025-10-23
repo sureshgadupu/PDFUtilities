@@ -108,6 +108,10 @@ class InitializationThread(QThread):
         self.initialization_complete.emit()
 
 
+
+
+
+
 class StretchableTabBar(QTabBar):
     """Custom tab bar with a stretchable dummy tab at the end"""
     
@@ -365,15 +369,31 @@ class PDFConverterApp(QMainWindow):
         # Create the shared file table with password column
         self.shared_file_table = QTableWidget(0, 3)
         self.shared_file_table.setHorizontalHeaderLabels(["File Name", "Size", "Password"])
-        self.shared_file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.shared_file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        self.shared_file_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        
+        # Configure column resizing with specific percentages
+        header = self.shared_file_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)  # File Name - 70%
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)  # Size - 10%
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)  # Password - 20%
+        header.setMinimumSectionSize(50)
+        header.setStretchLastSection(False)
+        
+        # Set stretch factors to achieve the desired percentages
+        # Stretch mode on column 0 with factors on others gives us control
+        header.setDefaultSectionSize(100)
+        
+        # We'll set actual widths after the table is shown
+        QTimer.singleShot(100, self._set_column_percentages)
         self.shared_file_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.shared_file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.shared_file_table.setShowGrid(True)
         self.shared_file_table.setAlternatingRowColors(True)
         # Disable sorting for the shared table
         self.shared_file_table.setSortingEnabled(False)
+
+        # Set minimum height for the table to ensure adequate space
+        self.shared_file_table.setMinimumHeight(400)  # Adjust this value as needed
+
         
         # Apply table styles
         self.shared_file_table.setStyleSheet(
@@ -577,6 +597,36 @@ class PDFConverterApp(QMainWindow):
                     if password:  # Only store non-empty passwords
                         passwords[file_path] = password
         return passwords
+
+    def _set_column_percentages(self):
+        """Set column widths based on percentages: File Name 55%, Size 15%, Password 30%"""
+        if not hasattr(self, 'shared_file_table'):
+            return
+        
+        # Get the actual available width
+        available_width = self.shared_file_table.viewport().width()
+        
+        # Calculate widths based on percentages
+        file_name_width = int(available_width * 0.55)  # 55% (reduced by 5%)
+        size_width = int(available_width * 0.15)       # 15% (increased by 5%)
+        password_width = int(available_width * 0.30)   # 30%
+        
+        # Set the column widths
+        header = self.shared_file_table.horizontalHeader()
+        
+        # Temporarily change resize modes to set widths
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
+        
+        # Set the widths
+        self.shared_file_table.setColumnWidth(0, file_name_width)
+        self.shared_file_table.setColumnWidth(1, size_width)
+        self.shared_file_table.setColumnWidth(2, password_width)
+        
+        # Restore resize modes - keep File Name as Stretch so it adapts to window resize
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+
 
     def _initialize_real_tabs(self):
         """Initialize the real tabs with all functionality"""
@@ -1051,28 +1101,28 @@ def create_splash_screen():
     painter.fillRect(0, 0, 400, 300, gradient)
 
     # Draw title
-    title_font = QFont("Arial", 24, QFont.Weight.Bold)
+    title_font = QFont("Arial", 18, QFont.Weight.Bold)
     painter.setFont(title_font)
     painter.setPen(QColor(0, 0, 0))
-    painter.drawText(0, 80, 400, 40, Qt.AlignmentFlag.AlignCenter, "PDF Utilities")
+    painter.drawText(0, 70, 400, 35, Qt.AlignmentFlag.AlignCenter, "PDF Utilities")
 
     # Draw subtitle - Updated to highlight key features
-    subtitle_font = QFont("Arial", 11)
+    subtitle_font = QFont("Arial", 9)
     painter.setFont(subtitle_font)
     painter.setPen(QColor(100, 100, 100))
-    painter.drawText(0, 120, 400, 30, Qt.AlignmentFlag.AlignCenter, "Convert • Compress • Merge • Split • Extract • Remove Password")
+    painter.drawText(0, 110, 400, 25, Qt.AlignmentFlag.AlignCenter, "Convert • Compress • Merge • Split • Extract • Remove Password")
 
     # Draw version
-    version_font = QFont("Arial", 10)
+    version_font = QFont("Arial", 8)
     painter.setFont(version_font)
     painter.setPen(QColor(150, 150, 150))
-    painter.drawText(0, 150, 400, 20, Qt.AlignmentFlag.AlignCenter, "All-in-One PDF Solution")
+    painter.drawText(0, 140, 400, 20, Qt.AlignmentFlag.AlignCenter, "All-in-One PDF Solution")
 
     # Draw loading text
-    loading_font = QFont("Arial", 11)
+    loading_font = QFont("Arial", 9)
     painter.setFont(loading_font)
     painter.setPen(QColor(80, 80, 80))
-    painter.drawText(0, 200, 400, 30, Qt.AlignmentFlag.AlignCenter, "Initializing...")
+    painter.drawText(0, 180, 400, 25, Qt.AlignmentFlag.AlignCenter, "Initializing...")
 
     painter.end()
 
