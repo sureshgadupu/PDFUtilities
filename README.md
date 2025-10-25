@@ -10,6 +10,7 @@ A comprehensive PDF processing application built with PyQt6, offering multiple P
 - **✂️ Split PDFs**: Extract specific pages or ranges into new files
 - **📝 Extract Text**: Pull text content from PDFs for easy reuse
 - **🖼️ Convert to Image**: Export PDF pages as images
+- **🔐 Password Manager**: Store frequently used PDF passwords with descriptive names
 - **⚡ Batch Processing**: Select and process multiple files at once
 - **🎨 Modern UI**: Beautiful, accessible interface with splash screen
 - **🚀 Fast Startup**: Optimized loading with background initialization
@@ -18,7 +19,16 @@ A comprehensive PDF processing application built with PyQt6, offering multiple P
 
 ## 📋 Changelog
 
-### Version 0.0.8 (Latest)
+### Version 0.0.9 (Latest)
+
+- **🔐 Added**: Password Manager feature - store frequently used PDF passwords with descriptive names
+- **✨ Enhanced**: Password input fields now include save (💾), dropdown (▼), and visibility toggle (👁) buttons
+- **⚙️ Added**: Full password management dialog with add, edit, remove, and clear all functions
+- **📁 Storage**: Passwords saved locally in `~/.pdf_utilities/saved_passwords.json`
+- **🎯 Improved**: Better UX for handling password-protected PDFs in batch operations
+- **📖 Added**: Comprehensive PASSWORD_MANAGER_GUIDE.md documentation
+
+### Version 0.0.8
 
 - **🔧 Fixed**: Password removal functionality now intelligently detects encrypted PDFs
 - **✨ Enhanced**: Non-encrypted PDFs no longer require password prompts

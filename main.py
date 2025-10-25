@@ -33,6 +33,7 @@ import fitz  # PyMuPDF for PDF password detection
 from compressor import is_ghostscript_available
 from gui.custom_widgets import PasswordInputWidget
 from gui.notification import NotificationWidget
+from password_manager import PasswordManager
 from gui.tabs import (
     CompressTab,
     ConvertTab,
@@ -172,6 +173,9 @@ class PDFConverterApp(QMainWindow):
         self.setWindowTitle("PDF Utility App")
         self.setWindowIcon(QIcon(get_resource_path("gui/icons/tools.svg")))
         self.resize(1000, 700)
+
+        # Initialize password manager
+        self.password_manager = PasswordManager()
 
         # Initialize components
         self.tabs_initialized = False
@@ -451,7 +455,7 @@ class PDFConverterApp(QMainWindow):
                 is_protected = is_pdf_password_protected(file_path)
 
             # Create password input widget
-            password_widget = PasswordInputWidget()
+            password_widget = PasswordInputWidget(password_manager=self.password_manager)
             if is_protected:
                 password_widget.password_input.setPlaceholderText("Password required")
                 password_widget.password_input.setStyleSheet("""
@@ -513,7 +517,7 @@ class PDFConverterApp(QMainWindow):
                         is_protected = is_pdf_password_protected(file_path)
                     
                     # Create password input widget
-                    password_widget = PasswordInputWidget()
+                    password_widget = PasswordInputWidget(password_manager=self.password_manager)
                     if is_protected:
                         password_widget.password_input.setPlaceholderText("Password required")
                         password_widget.password_input.setStyleSheet("""

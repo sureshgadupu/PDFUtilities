@@ -40,6 +40,62 @@ class ConvertTab(BaseTab):
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
 
+    def _start_conversion_process(self):
+        """Start the PDF to DOCX conversion process"""
+        pdf_files = self.get_selected_files()
+        if not pdf_files:
+            self.show_notification("Please select PDF files to convert.", "error", duration=2000)
+            return
+
+        output_dir = self.get_output_directory()
+        if not output_dir:
+            self.show_notification("Please select an output directory.", "error", duration=2000)
+            return
+
+        # Get passwords for the files
+        passwords = self.get_file_passwords()
+
+        # Create and start worker
+        self.worker = ConversionWorker(pdf_files, output_dir, passwords=passwords, parent=self)
+        self.worker.progress.connect(self._update_progress)
+        self.worker.status_update.connect(self.show_notification)
+        self.worker.finished.connect(self._handle_conversion_finished)
+        self.worker.error.connect(self._handle_conversion_error)
+        self.worker.start()
+
+        # Update UI
+        self.start_btn.setEnabled(False)
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
+        self.show_notification("Starting conversion...", "info")
+
+    def _update_progress(self, value):
+        """Update progress bar"""
+        self.progress_bar.setValue(value)
+
+    def _handle_conversion_finished(self, successful_messages, failed_messages):
+        """Handle conversion completion"""
+        self.start_btn.setEnabled(True)
+        self.progress_bar.setVisible(False)
+        
+        if successful_messages:
+            self.show_notification(f"Conversion completed! {len(successful_messages)} file(s) converted successfully.", "success", duration=3000)
+        
+        if failed_messages:
+            self.show_notification(f"Conversion failed for {len(failed_messages)} file(s). Check console for details.", "error", duration=3000)
+
+    def _handle_conversion_error(self, error_message):
+        """Handle conversion error"""
+        self.start_btn.setEnabled(True)
+        self.progress_bar.setVisible(False)
+        self.show_notification(f"Conversion error: {error_message}", "error", duration=3000)
+
+    def stop_active_conversion(self):
+        """Stop active conversion worker"""
+        if self.worker and self.worker.isRunning():
+            self.worker.stop()
+            self.worker.wait()
+
 
 class PasswordRemovalTab(BaseTab):
     def __init__(self, parent=None):
