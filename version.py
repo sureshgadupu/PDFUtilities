@@ -48,11 +48,11 @@ def get_version():
                     return version
 
         # Fallback to hardcoded version
-        return "0.0.6"
+        return "0.0.9"
 
     except Exception as e:
         # Final fallback
-        return "0.0.6"
+        return "0.0.9"
 
 
 def _get_build_version():
