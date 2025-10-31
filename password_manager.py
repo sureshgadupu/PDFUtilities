@@ -129,3 +129,4 @@ class PasswordManager:
         self.passwords.clear()
         self._save_passwords()
 
+

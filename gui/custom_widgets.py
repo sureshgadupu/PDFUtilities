@@ -114,16 +114,17 @@ class PasswordInputWidget(QWidget):
             self.save_btn.setToolTip("Save this password")
             self.save_btn.setStyleSheet("""
                 QPushButton {
-                    background: #d4edda;
-                    border: 1px solid #c3e6cb;
+                    background: #b2e0f7;
+                    border: 1px solid #a2d4ec;
                     border-radius: 4px;
                     font-size: 12px;
+                    font-weight: bold;
                 }
                 QPushButton:hover {
-                    background: #c3e6cb;
+                    background: #a2d4ec;
                 }
                 QPushButton:pressed {
-                    background: #b1dfbb;
+                    background: #92c8dc;
                 }
             """)
             self.save_btn.clicked.connect(self.save_current_password)
@@ -189,7 +190,33 @@ class PasswordInputWidget(QWidget):
         
         password = self.password_input.text()
         if not password:
-            QMessageBox.warning(self, "No Password", "Please enter a password first.")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("No Password")
+            msg.setText("Please enter a password first.")
+            
+            # Scale down the icon size
+            icon = msg.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(scaled_icon)
+            
+            msg.setStyleSheet("""
+                QMessageBox QLabel { 
+                    color: #000000;
+                }
+                QPushButton { 
+                    background-color: #b2e0f7; 
+                    color: #000000; 
+                    border: 1px solid #a2d4ec; 
+                    border-radius: 4px; 
+                    padding: 6px 16px;
+                    min-width: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #a2d4ec;
+                }
+            """)
+            msg.exec()
             return
         
         dialog = SavePasswordDialog(self, self.password_manager, password)
@@ -310,7 +337,33 @@ class SavePasswordDialog(QDialog):
         """Save the password with the entered name"""
         name = self.name_input.text().strip()
         if not name:
-            QMessageBox.warning(self, "Invalid Name", "Please enter a name for the password.")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("Invalid Name")
+            msg.setText("Please enter a name for the password.")
+            
+            # Scale down the icon size
+            icon = msg.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(scaled_icon)
+            
+            msg.setStyleSheet("""
+                QMessageBox QLabel { 
+                    color: #000000;
+                }
+                QPushButton { 
+                    background-color: #b2e0f7; 
+                    color: #000000; 
+                    border: 1px solid #a2d4ec; 
+                    border-radius: 4px; 
+                    padding: 6px 16px;
+                    min-width: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #a2d4ec;
+                }
+            """)
+            msg.exec()
             return
         
         if self.password_manager.add_password(name, self.password):
@@ -318,7 +371,28 @@ class SavePasswordDialog(QDialog):
             msg.setIcon(QMessageBox.Icon.Information)
             msg.setWindowTitle("Success")
             msg.setText(f"Password '{name}' saved successfully!")
-            msg.setStyleSheet("QLabel { color: #000; } QPushButton { background: #b2e0f7; color: #000; border: 1px solid #a2d4ec; border-radius: 4px; padding: 6px 16px; }")
+            
+            # Scale down the icon size
+            icon = msg.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(scaled_icon)
+            
+            msg.setStyleSheet("""
+                QMessageBox QLabel { 
+                    color: #000000;
+                }
+                QPushButton { 
+                    background-color: #b2e0f7; 
+                    color: #000000; 
+                    border: 1px solid #a2d4ec; 
+                    border-radius: 4px; 
+                    padding: 6px 16px;
+                    min-width: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #a2d4ec;
+                }
+            """)
             msg.exec()
             self.accept()
         else:
@@ -327,7 +401,28 @@ class SavePasswordDialog(QDialog):
             msg.setWindowTitle("Name Exists")
             msg.setText(f"A password named '{name}' already exists. Do you want to replace it?")
             msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            msg.setStyleSheet("QLabel { color: #000; } QPushButton { background: #b2e0f7; color: #000; border: 1px solid #a2d4ec; border-radius: 4px; padding: 6px 16px; }")
+            
+            # Scale down the icon size
+            icon = msg.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(scaled_icon)
+            
+            msg.setStyleSheet("""
+                QMessageBox QLabel { 
+                    color: #000000;
+                }
+                QPushButton { 
+                    background-color: #b2e0f7; 
+                    color: #000000; 
+                    border: 1px solid #a2d4ec; 
+                    border-radius: 4px; 
+                    padding: 6px 16px;
+                    min-width: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #a2d4ec;
+                }
+            """)
             reply = msg.exec()
             if reply == QMessageBox.StandardButton.Yes:
                 self.password_manager.update_password(name, name, self.password)
@@ -335,7 +430,28 @@ class SavePasswordDialog(QDialog):
                 msg.setIcon(QMessageBox.Icon.Information)
                 msg.setWindowTitle("Success")
                 msg.setText(f"Password '{name}' updated successfully!")
-                msg.setStyleSheet("QLabel { color: #000; } QPushButton { background: #b2e0f7; color: #000; border: 1px solid #a2d4ec; border-radius: 4px; padding: 6px 16px; }")
+                
+                # Scale down the icon size
+                icon = msg.iconPixmap()
+                scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                msg.setIconPixmap(scaled_icon)
+                
+                msg.setStyleSheet("""
+                    QMessageBox QLabel { 
+                        color: #000000;
+                    }
+                    QPushButton { 
+                        background-color: #b2e0f7; 
+                        color: #000000; 
+                        border: 1px solid #a2d4ec; 
+                        border-radius: 4px; 
+                        padding: 6px 16px;
+                        min-width: 60px;
+                    }
+                    QPushButton:hover {
+                        background-color: #a2d4ec;
+                    }
+                """)
                 msg.exec()
                 self.accept()
 
@@ -513,7 +629,33 @@ class PasswordManagerDialog(QDialog):
         """Edit selected password"""
         current_row = self.password_table.currentRow()
         if current_row < 0:
-            QMessageBox.warning(self, "No Selection", "Please select a password to edit.")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("No Selection")
+            msg.setText("Please select a password to edit.")
+            
+            # Scale down the icon size
+            icon = msg.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(scaled_icon)
+            
+            msg.setStyleSheet("""
+                QMessageBox QLabel { 
+                    color: #000000;
+                }
+                QPushButton { 
+                    background-color: #b2e0f7; 
+                    color: #000000; 
+                    border: 1px solid #a2d4ec; 
+                    border-radius: 4px; 
+                    padding: 6px 16px;
+                    min-width: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #a2d4ec;
+                }
+            """)
+            msg.exec()
             return
         
         name = self.password_table.item(current_row, 0).text()
@@ -527,29 +669,99 @@ class PasswordManagerDialog(QDialog):
         """Remove selected password"""
         current_row = self.password_table.currentRow()
         if current_row < 0:
-            QMessageBox.warning(self, "No Selection", "Please select a password to remove.")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("No Selection")
+            msg.setText("Please select a password to remove.")
+            
+            # Scale down the icon size
+            icon = msg.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(scaled_icon)
+            
+            msg.setStyleSheet("""
+                QMessageBox QLabel { 
+                    color: #000000;
+                }
+                QPushButton { 
+                    background-color: #b2e0f7; 
+                    color: #000000; 
+                    border: 1px solid #a2d4ec; 
+                    border-radius: 4px; 
+                    padding: 6px 16px;
+                    min-width: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #a2d4ec;
+                }
+            """)
+            msg.exec()
             return
         
         name = self.password_table.item(current_row, 0).text()
         
-        reply = QMessageBox.question(
-            self, 
-            "Confirm Remove", 
-            f"Remove password '{name}'?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle("Confirm Remove")
+        msg.setText(f"Remove password '{name}'?")
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        
+        # Scale down the icon size
+        icon = msg.iconPixmap()
+        scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        msg.setIconPixmap(scaled_icon)
+        
+        msg.setStyleSheet("""
+            QMessageBox QLabel { 
+                color: #000000;
+            }
+            QPushButton { 
+                background-color: #b2e0f7; 
+                color: #000000; 
+                border: 1px solid #a2d4ec; 
+                border-radius: 4px; 
+                padding: 6px 16px;
+                min-width: 60px;
+            }
+            QPushButton:hover {
+                background-color: #a2d4ec;
+            }
+        """)
+        reply = msg.exec()
         if reply == QMessageBox.StandardButton.Yes:
             self.password_manager.remove_password(name)
             self.load_passwords()
     
     def clear_all(self):
         """Clear all passwords"""
-        reply = QMessageBox.question(
-            self,
-            "Confirm Clear All",
-            "Are you sure you want to remove all saved passwords?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle("Confirm Clear All")
+        msg.setText("Are you sure you want to remove all saved passwords?")
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        
+        # Scale down the icon size
+        icon = msg.iconPixmap()
+        scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        msg.setIconPixmap(scaled_icon)
+        
+        msg.setStyleSheet("""
+            QMessageBox QLabel { 
+                color: #000000;
+            }
+            QPushButton { 
+                background-color: #b2e0f7; 
+                color: #000000; 
+                border: 1px solid #a2d4ec; 
+                border-radius: 4px; 
+                padding: 6px 16px;
+                min-width: 60px;
+            }
+            QPushButton:hover {
+                background-color: #a2d4ec;
+            }
+        """)
+        reply = msg.exec()
         if reply == QMessageBox.StandardButton.Yes:
             self.password_manager.clear_all()
             self.load_passwords()
@@ -574,6 +786,13 @@ class EditPasswordDialog(QDialog):
         
         # Form layout
         form = QFormLayout()
+        
+        # Create labels with black color
+        name_label = QLabel("Name:")
+        name_label.setStyleSheet("color: #000000; font-size: 13px;")
+        
+        password_label = QLabel("Password:")
+        password_label.setStyleSheet("color: #000000; font-size: 13px;")
         
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("e.g., Work Documents, Client PDFs")
@@ -611,8 +830,8 @@ class EditPasswordDialog(QDialog):
             }
         """)
         
-        form.addRow("Name:", self.name_input)
-        form.addRow("Password:", self.password_input)
+        form.addRow(name_label, self.name_input)
+        form.addRow(password_label, self.password_input)
         layout.addLayout(form)
         
         # Warning label
@@ -654,11 +873,63 @@ class EditPasswordDialog(QDialog):
         password = self.password_input.text()
         
         if not name:
-            QMessageBox.warning(self, "Invalid Name", "Please enter a name for the password.")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("Invalid Name")
+            msg.setText("Please enter a name for the password.")
+            
+            # Scale down the icon size
+            icon = msg.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(scaled_icon)
+            
+            msg.setStyleSheet("""
+                QMessageBox QLabel { 
+                    color: #000000;
+                }
+                QPushButton { 
+                    background-color: #b2e0f7; 
+                    color: #000000; 
+                    border: 1px solid #a2d4ec; 
+                    border-radius: 4px; 
+                    padding: 6px 16px;
+                    min-width: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #a2d4ec;
+                }
+            """)
+            msg.exec()
             return
         
         if not password:
-            QMessageBox.warning(self, "Invalid Password", "Please enter a password.")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("Invalid Password")
+            msg.setText("Please enter a password.")
+            
+            # Scale down the icon size
+            icon = msg.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(scaled_icon)
+            
+            msg.setStyleSheet("""
+                QMessageBox QLabel { 
+                    color: #000000;
+                }
+                QPushButton { 
+                    background-color: #b2e0f7; 
+                    color: #000000; 
+                    border: 1px solid #a2d4ec; 
+                    border-radius: 4px; 
+                    padding: 6px 16px;
+                    min-width: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #a2d4ec;
+                }
+            """)
+            msg.exec()
             return
         
         if self.is_edit:
@@ -675,7 +946,28 @@ class EditPasswordDialog(QDialog):
                 msg.setWindowTitle("Name Exists")
                 msg.setText(f"A password named '{name}' already exists. Do you want to replace it?")
                 msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-                msg.setStyleSheet("QLabel { color: #000; } QPushButton { background: #b2e0f7; color: #000; border: 1px solid #a2d4ec; border-radius: 4px; padding: 6px 16px; }")
+                
+                # Scale down the icon size
+                icon = msg.iconPixmap()
+                scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                msg.setIconPixmap(scaled_icon)
+                
+                msg.setStyleSheet("""
+                    QMessageBox QLabel { 
+                        color: #000000;
+                    }
+                    QPushButton { 
+                        background-color: #b2e0f7; 
+                        color: #000000; 
+                        border: 1px solid #a2d4ec; 
+                        border-radius: 4px; 
+                        padding: 6px 16px;
+                        min-width: 60px;
+                    }
+                    QPushButton:hover {
+                        background-color: #a2d4ec;
+                    }
+                """)
                 reply = msg.exec()
                 if reply == QMessageBox.StandardButton.Yes:
                     self.password_manager.update_password(name, name, password)

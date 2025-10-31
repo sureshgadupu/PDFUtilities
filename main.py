@@ -454,16 +454,15 @@ class PDFConverterApp(QMainWindow):
             if file_name.lower().endswith('.pdf'):
                 is_protected = is_pdf_password_protected(file_path)
 
-            # Create password input widget
-            password_widget = PasswordInputWidget(password_manager=self.password_manager)
+            # Create password widget based on protection status
             if is_protected:
+                password_widget = PasswordInputWidget(password_manager=self.password_manager)
                 password_widget.password_input.setPlaceholderText("Password required")
                 password_widget.password_input.setStyleSheet("""
                     QLineEdit {
                         background: #fff3cd;
                         color: #856404;
                         border: 1px solid #ffeaa7;
-                        border-radius: 4px;
                         padding: 4px 8px;
                         font-size: 12px;
                     }
@@ -472,14 +471,14 @@ class PDFConverterApp(QMainWindow):
                     }
                 """)
             else:
-                password_widget.password_input.setPlaceholderText("No password needed")
-                password_widget.password_input.setEnabled(False)
-                password_widget.password_input.setStyleSheet("""
-                    QLineEdit {
+                # Create a simple label for non-protected PDFs
+                password_widget = QLabel("Password not required")
+                password_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                password_widget.setStyleSheet("""
+                    QLabel {
                         background: #d4edda;
                         color: #155724;
                         border: 1px solid #c3e6cb;
-                        border-radius: 4px;
                         padding: 4px 8px;
                         font-size: 12px;
                     }
@@ -516,16 +515,15 @@ class PDFConverterApp(QMainWindow):
                     if file_name.lower().endswith('.pdf'):
                         is_protected = is_pdf_password_protected(file_path)
                     
-                    # Create password input widget
-                    password_widget = PasswordInputWidget(password_manager=self.password_manager)
+                    # Create password widget based on protection status
                     if is_protected:
+                        password_widget = PasswordInputWidget(password_manager=self.password_manager)
                         password_widget.password_input.setPlaceholderText("Password required")
                         password_widget.password_input.setStyleSheet("""
                             QLineEdit {
                                 background: #fff3cd;
                                 color: #856404;
                                 border: 1px solid #ffeaa7;
-                                border-radius: 4px;
                                 padding: 4px 8px;
                                 font-size: 12px;
                             }
@@ -534,14 +532,14 @@ class PDFConverterApp(QMainWindow):
                             }
                         """)
                     else:
-                        password_widget.password_input.setPlaceholderText("No password needed")
-                        password_widget.password_input.setEnabled(False)
-                        password_widget.password_input.setStyleSheet("""
-                            QLineEdit {
+                        # Create a simple label for non-protected PDFs
+                        password_widget = QLabel("Password not required")
+                        password_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                        password_widget.setStyleSheet("""
+                            QLabel {
                                 background: #d4edda;
                                 color: #155724;
                                 border: 1px solid #c3e6cb;
-                                border-radius: 4px;
                                 padding: 4px 8px;
                                 font-size: 12px;
                             }
@@ -596,14 +594,15 @@ class PDFConverterApp(QMainWindow):
             if item:
                 file_path = item.toolTip()
                 password_widget = self.shared_file_table.cellWidget(row, 2)
-                if password_widget:
+                if password_widget and hasattr(password_widget, 'get_password'):
+                    # Only get password if widget is PasswordInputWidget
                     password = password_widget.get_password()
                     if password:  # Only store non-empty passwords
                         passwords[file_path] = password
         return passwords
 
     def _set_column_percentages(self):
-        """Set column widths based on percentages: File Name 55%, Size 15%, Password 30%"""
+        """Set column widths based on percentages: File Name 45%, Size 15%, Password 40%"""
         if not hasattr(self, 'shared_file_table'):
             return
         
@@ -611,9 +610,9 @@ class PDFConverterApp(QMainWindow):
         available_width = self.shared_file_table.viewport().width()
         
         # Calculate widths based on percentages
-        file_name_width = int(available_width * 0.55)  # 55% (reduced by 5%)
-        size_width = int(available_width * 0.15)       # 15% (increased by 5%)
-        password_width = int(available_width * 0.30)   # 30%
+        file_name_width = int(available_width * 0.45)  # 45%
+        size_width = int(available_width * 0.15)       # 15%
+        password_width = int(available_width * 0.40)   # 40% (increased by 10%)
         
         # Set the column widths
         header = self.shared_file_table.horizontalHeader()
@@ -708,17 +707,19 @@ class PDFConverterApp(QMainWindow):
             msg_box.setText("Ghostscript is required for PDF compression features. Please ensure Ghostscript is installed on your system.")
             msg_box.setIcon(QMessageBox.Icon.Warning)
             msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-            # Set the dialog text color to black and style the button
+            
+            # Scale down the icon size
+            icon = msg_box.iconPixmap()
+            scaled_icon = icon.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            msg_box.setIconPixmap(scaled_icon)
+            
             msg_box.setStyleSheet("""
-                QMessageBox { 
-                    color: black; 
-                } 
                 QMessageBox QLabel { 
-                    color: black; 
+                    color: #000000;
                 }
                 QMessageBox QPushButton {
                     background-color: #b2e0f7;
-                    color: black;
+                    color: #000000;
                     border: 1px solid #8fc7e6;
                     border-radius: 4px;
                     padding: 6px 12px;
@@ -980,12 +981,12 @@ class PDFConverterApp(QMainWindow):
         """Show About dialog"""
         current_version = get_version()
         about_text = f"""
-        <div style="color: black;">
-        <h2>PDF Utilities</h2>
-        <p><b>Version:</b> {current_version}</p>
-        <p><b>Description:</b> A comprehensive PDF processing application built with PyQt6.</p>
-        <p><b>Features:</b></p>
-        <ul>
+        <div style="color: #000000;">
+        <h2 style="color: #000000;">PDF Utilities</h2>
+        <p style="color: #000000;"><b>Version:</b> {current_version}</p>
+        <p style="color: #000000;"><b>Description:</b> A comprehensive PDF processing application built with PyQt6.</p>
+        <p style="color: #000000;"><b>Features:</b></p>
+        <ul style="color: #000000;">
             <li>Convert PDF to DOCX</li>
             <li>Compress PDF files</li>
             <li>Merge multiple PDFs</li>
@@ -994,53 +995,85 @@ class PDFConverterApp(QMainWindow):
             <li>Convert PDF to images</li>
             <li>Remove password protection</li>
         </ul>
-        <p><b>License:</b> GNU Affero General Public License v3.0 (AGPL-3.0)</p>
-        <p><b>Dependencies:</b> PyQt6, PyMuPDF, pdf2docx, Pillow, Ghostscript</p>
+        <p style="color: #000000;"><b>License:</b> GNU Affero General Public License v3.0 (AGPL-3.0)</p>
+        <p style="color: #000000;"><b>Dependencies:</b> PyQt6, PyMuPDF, pdf2docx, Pillow, Ghostscript</p>
         </div>
         """
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("About PDF Utilities")
         msg_box.setText(about_text)
         msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg_box.setStyleSheet("QPushButton { color: black; }")
+        msg_box.setStyleSheet("""
+            QMessageBox QLabel { 
+                color: #000000;
+            }
+            QPushButton { 
+                color: #000000; 
+                background-color: #b2e0f7;
+                border: 1px solid #8fc7e6;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-size: 12px;
+                min-width: 60px;
+            }
+            QPushButton:hover {
+                background-color: #a2d4ec;
+            }
+        """)
         msg_box.exec()
 
     def _show_documentation(self):
         """Show documentation dialog"""
         doc_text = """
-        <div style="color: black;">
-        <h2>PDF Utilities Documentation</h2>
+        <div style="color: #000000;">
+        <h2 style="color: #000000;">PDF Utilities Documentation</h2>
         
-        <h3>Quick Start Guide</h3>
-        <p><b>1. Add Files:</b> Use "Add File" or "Add Folder" to select PDF files</p>
-        <p><b>2. Choose Operation:</b> Select the appropriate tab for your task</p>
-        <p><b>3. Configure Settings:</b> Adjust options as needed</p>
-        <p><b>4. Select Output:</b> Choose where to save results</p>
-        <p><b>5. Start Processing:</b> Click the action button</p>
+        <h3 style="color: #000000;">Quick Start Guide</h3>
+        <p style="color: #000000;"><b>1. Add Files:</b> Use "Add File" or "Add Folder" to select PDF files</p>
+        <p style="color: #000000;"><b>2. Choose Operation:</b> Select the appropriate tab for your task</p>
+        <p style="color: #000000;"><b>3. Configure Settings:</b> Adjust options as needed</p>
+        <p style="color: #000000;"><b>4. Select Output:</b> Choose where to save results</p>
+        <p style="color: #000000;"><b>5. Start Processing:</b> Click the action button</p>
         
-        <h3>Features</h3>
-        <p><b>Convert to DOCX:</b> Convert PDF files to editable Word documents</p>
-        <p><b>Compress PDF:</b> Reduce file size with quality options</p>
-        <p><b>Merge PDFs:</b> Combine multiple PDFs into one file</p>
-        <p><b>Split PDF:</b> Extract specific pages or ranges</p>
-        <p><b>Extract Text:</b> Pull text content from PDFs</p>
-        <p><b>Convert to Image:</b> Export PDF pages as images</p>
-        <p><b>Remove Password:</b> Remove password protection from PDF files</p>
+        <h3 style="color: #000000;">Features</h3>
+        <p style="color: #000000;"><b>Convert to DOCX:</b> Convert PDF files to editable Word documents</p>
+        <p style="color: #000000;"><b>Compress PDF:</b> Reduce file size with quality options</p>
+        <p style="color: #000000;"><b>Merge PDFs:</b> Combine multiple PDFs into one file</p>
+        <p style="color: #000000;"><b>Split PDF:</b> Extract specific pages or ranges</p>
+        <p style="color: #000000;"><b>Extract Text:</b> Pull text content from PDFs</p>
+        <p style="color: #000000;"><b>Convert to Image:</b> Export PDF pages as images</p>
+        <p style="color: #000000;"><b>Remove Password:</b> Remove password protection from PDF files</p>
         
-        <h3>Keyboard Shortcuts</h3>
-        <p><b>Ctrl+O:</b> Add File</p>
-        <p><b>Ctrl+Shift+O:</b> Add Folder</p>
-        <p><b>Remove:</b> Remove selected files</p>
-        <p><b>Ctrl+Shift+D:</b> Clear all files</p>
-        <p><b>Ctrl+Q:</b> Exit application</p>
-        <p><b>F1:</b> Show this documentation</p>
+        <h3 style="color: #000000;">Keyboard Shortcuts</h3>
+        <p style="color: #000000;"><b>Ctrl+O:</b> Add File</p>
+        <p style="color: #000000;"><b>Ctrl+Shift+O:</b> Add Folder</p>
+        <p style="color: #000000;"><b>Remove:</b> Remove selected files</p>
+        <p style="color: #000000;"><b>Ctrl+Shift+D:</b> Clear all files</p>
+        <p style="color: #000000;"><b>Ctrl+Q:</b> Exit application</p>
+        <p style="color: #000000;"><b>F1:</b> Show this documentation</p>
         </div>
         """
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("Documentation")
         msg_box.setText(doc_text)
         msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg_box.setStyleSheet("QPushButton { color: black; }")
+        msg_box.setStyleSheet("""
+            QMessageBox QLabel { 
+                color: #000000;
+            }
+            QPushButton { 
+                color: #000000; 
+                background-color: #b2e0f7;
+                border: 1px solid #8fc7e6;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-size: 12px;
+                min-width: 60px;
+            }
+            QPushButton:hover {
+                background-color: #a2d4ec;
+            }
+        """)
         msg_box.exec()
 
     def resizeEvent(self, event):
